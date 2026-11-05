@@ -446,7 +446,7 @@ public class MainActivity extends Activity {
                 : ("STOP LOSS".equals(tradeResult.reason)
                     ? "Stop Loss был достигнут раньше Take Profit. Разбери, был ли риск на сделку заранее приемлемым. Не отодвигай стоп задним числом."
                     : "Горизонт симуляции закончился до TP или SL. Позиция закрыта по последней доступной цене истории. Такой результат не равен достижению цели.");
-        learning.addView(text(lessonText,12,TEXT,false));gap(8);
+        learning.addView(text(lessonText,12,TEXT,false));gap(learning,8);
         learning.addView(text("Начислено: +"+(tradeResult.hitTp?150:100)+" XP за завершённую тренировку. Виртуальный баланс обновлён.",11,MUTED,false));c.addView(learning);gap(c,16);
         addButton(c,"Следующая историческая ситуация",true,v->{tradeResult=null;showPractice();loadScenario();});
         addButton(c,"Посмотреть прогресс",false,v->showStats());
