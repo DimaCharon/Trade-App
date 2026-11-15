@@ -207,26 +207,26 @@ public class MainActivity extends Activity {
         page = 0; beginPage("TRADEQUEST", false);
         ScrollView s = scroll(root); LinearLayout c = content(s);
         TextView eyebrow = text("ТВОЯ ТОРГОВАЯ ТРЕНИРОВКА", 10, GREEN, true); c.addView(eyebrow);
-        gap(c, 10);
+        gap(c, 8);
         TextView heading = text("Учись на рынке.\nНе рискуя деньгами.", 29, TEXT, true); heading.setLineSpacing(dp(3), 1f); c.addView(heading);
         gap(c, 20);
-        LinearLayout wallet = card(); wallet.setBackground(shape(Color.rgb(21, 27, 31), 23, Color.rgb(55, 72, 49), 1));
+        LinearLayout wallet = card(); wallet.setBackground(shape(Color.rgb(21, 27, 31), 16, BORDER, 1));
         LinearLayout statsRow = row();
         LinearLayout balCol = column();
-        balCol.addView(text("ВИРТУАЛЬНЫЙ БАЛАНС", 10, MUTED, true)); gap(balCol, 7);
+        balCol.addView(text("ВИРТУАЛЬНЫЙ БАЛАНС", 10, MUTED, true)); gap(balCol, 8);
         balCol.addView(text(moneyFmt.format(balance) + " USDT", 25, TEXT, true));
         statsRow.addView(balCol, new LinearLayout.LayoutParams(0, -2, 1));
         LinearLayout xpCol = column(); xpCol.setGravity(Gravity.RIGHT);
-        xpCol.addView(text("ОПЫТ", 10, MUTED, true)); gap(xpCol, 7); xpCol.addView(text(xp + " XP", 18, GREEN, true));
-        statsRow.addView(xpCol); wallet.addView(statsRow); gap(wallet, 18);
+        xpCol.addView(text("ОПЫТ", 10, MUTED, true)); gap(xpCol, 8); xpCol.addView(text(xp + " XP", 18, GREEN, true));
+        statsRow.addView(xpCol); wallet.addView(statsRow); gap(wallet, 16);
         View line = new View(this); line.setBackgroundColor(BORDER); wallet.addView(line, lp(-1, 1)); gap(wallet, 12);
         LinearLayout bottom = row(); bottom.addView(text("◷  Серия тренировок", 12, MUTED, false), new LinearLayout.LayoutParams(0, -2, 1));
         bottom.addView(text(trades + " сделок", 12, TEXT, true)); wallet.addView(bottom); c.addView(wallet);
-        gap(c, 22);
+        gap(c, 24);
         LinearLayout quick=row();
-        LinearLayout practiceTile=card();practiceTile.addView(text("ПРАКТИКА",10,GREEN,true));gap(practiceTile,7);practiceTile.addView(text("Исторические сделки",15,TEXT,true));gap(practiceTile,4);practiceTile.addView(text("Работа с реальными свечами",11,MUTED,false));practiceTile.setOnClickListener(v->showPractice());quick.addView(practiceTile,new LinearLayout.LayoutParams(0,-2,1));
-        LinearLayout calendarTile=card();calendarTile.addView(text("КАЛЕНДАРЬ",10,GREEN,true));gap(calendarTile,7);calendarTile.addView(text("Мои сделки",15,TEXT,true));gap(calendarTile,4);calendarTile.addView(text("Автоматический P&L",11,MUTED,false));calendarTile.setOnClickListener(v->showCalendar());LinearLayout.LayoutParams calp=new LinearLayout.LayoutParams(0,-2,1);calp.leftMargin=dp(8);quick.addView(calendarTile,calp);c.addView(quick);
-        gap(c,22);
+        LinearLayout practiceTile=card();practiceTile.addView(text("ПРАКТИКА",10,GREEN,true));gap(practiceTile,8);practiceTile.addView(text("Исторические сделки",15,TEXT,true));gap(practiceTile,4);practiceTile.addView(text("Работа с реальными свечами",11,MUTED,false));practiceTile.setOnClickListener(v->showPractice());quick.addView(practiceTile,new LinearLayout.LayoutParams(0,-2,1));
+        LinearLayout calendarTile=card();calendarTile.addView(text("КАЛЕНДАРЬ",10,GREEN,true));gap(calendarTile,8);calendarTile.addView(text("Мои сделки",15,TEXT,true));gap(calendarTile,4);calendarTile.addView(text("Автоматический P&L",11,MUTED,false));calendarTile.setOnClickListener(v->showCalendar());LinearLayout.LayoutParams calp=new LinearLayout.LayoutParams(0,-2,1);calp.leftMargin=dp(8);quick.addView(calendarTile,calp);c.addView(quick);
+        gap(c,24);
         LinearLayout section = row(); section.addView(text("ТВОЙ ПУТЬ", 11, MUTED, true), new LinearLayout.LayoutParams(0, -2, 1));
         TextView all = text("Все уроки  ↗", 12, GREEN, true); section.addView(all); all.setOnClickListener(v -> showLessons()); c.addView(section);
         gap(c, 12);
@@ -277,10 +277,10 @@ public class MainActivity extends Activity {
         chartTop.addView(text("BYBIT · LINEAR", 10, GREEN, true)); chartCard.addView(chartTop); gap(chartCard, 12);
         practiceChart = new CandlestickChartView(this); practiceChart.setEmptyLabel("Загружаем историю рынка"); chartCard.addView(practiceChart,lp(-1,230)); gap(chartCard, 8);
         chartCard.addView(text("Будущие свечи скрыты. Решение принимается только по данным, доступным на тот момент.", 11, MUTED, false));
-        c.addView(chartCard); gap(c, 15);
+        c.addView(chartCard); gap(c, 16);
         LinearLayout info = card(); info.addView(text("КАК ЭТО РАБОТАЕТ", 10, GREEN, true)); gap(info, 8);
         info.addView(text("Выбранная свеча уже закрыта. Вход в симуляции будет по открытию следующей свечи — так приложение не использует будущее для расчёта цены входа.", 12, MUTED, false)); c.addView(info);
-        gap(c, 14);
+        gap(c, 12);
         addButton(c, binaryMode?"Выбрать направление и экспирацию":"Настроить сделку", true, v -> { if (pivot < 0 || candles.isEmpty()) toast("Сначала загрузи исторический момент"); else if(binaryMode)showBinarySetup();else showSetup(); });
         addBottomNav(1);
         if (candles.isEmpty() && !loading) loadScenario();
@@ -371,11 +371,11 @@ public class MainActivity extends Activity {
         up.setOnClickListener(v->{isLong=true;up.setBackground(ripple(GREEN,10));up.setTextColor(BG);down.setBackground(ripple(PANEL2,10));down.setTextColor(TEXT);});
         down.setOnClickListener(v->{isLong=false;down.setBackground(ripple(GREEN,10));down.setTextColor(BG);up.setBackground(ripple(PANEL2,10));up.setTextColor(TEXT);});c.addView(dirCard);gap(c,12);
         LinearLayout params=card();params.addView(text("СРОК И СТАВКА",12,TEXT,true));gap(params,8);
-        params.addView(text("Экспирация",12,MUTED,false));gap(params,4);Spinner expiry=spinner(new String[]{"1 свеча","3 свечи","5 свечей"});params.addView(expiry,lp(-1,48));gap(params,10);
+        params.addView(text("Экспирация",12,MUTED,false));gap(params,4);Spinner expiry=spinner(new String[]{"1 свеча","3 свечи","5 свечей"});params.addView(expiry,lp(-1,48));gap(params,8);
         params.addView(text("Сумма сделки · USDT",12,MUTED,false));gap(params,4);EditText stake=input("100");params.addView(stake,lp(-1,48));c.addView(params);gap(c,12);
-        LinearLayout preview=card();preview.addView(text("УСЛОВИЯ РАСЧЁТА",11,GREEN,true));gap(preview,7);
-        TextView details=text("Вход: открытие следующей свечи\nЭкспирация: закрытие выбранной будущей свечи\nВыплата при верном направлении: +80% от ставки\nПри неверном направлении: −100% ставки\nПри равной цене: возврат ставки",12,TEXT,false);preview.addView(details);gap(preview,6);
-        preview.addView(text("80% здесь задано как учебное условие тренажёра. Это не котировка брокера. Комиссии и спред не моделируются.",10,MUTED,false));c.addView(preview);gap(c,14);
+        LinearLayout preview=card();preview.addView(text("УСЛОВИЯ РАСЧЁТА",11,GREEN,true));gap(preview,8);
+        TextView details=text("Вход: открытие следующей свечи\nЭкспирация: закрытие выбранной будущей свечи\nВыплата при верном направлении: +80% от ставки\nПри неверном направлении: −100% ставки\nПри равной цене: возврат ставки",12,TEXT,false);preview.addView(details);gap(preview,8);
+        preview.addView(text("80% здесь задано как учебное условие тренажёра. Это не котировка брокера. Комиссии и спред не моделируются.",10,MUTED,false));c.addView(preview);gap(c,12);
         addButton(c,"Открыть историческую сделку",true,v->{
             try{
                 double amount=parse(stake.getText().toString());int bars=expiry.getSelectedItemPosition()==0?1:(expiry.getSelectedItemPosition()==1?3:5);
@@ -391,13 +391,13 @@ public class MainActivity extends Activity {
     private void showBinaryResult(){
         page=3;beginPage("Результат бинарной сделки",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);
         boolean positive=binaryResult.pnl>0;LinearLayout card=card();card.addView(text(binaryResult.draw?"ВОЗВРАТ СТАВКИ":(binaryResult.won?"ВЕРНО":"НЕВЕРНО"),11,binaryResult.draw?MUTED:(positive?GREEN:RED),true));gap(card,8);
-        card.addView(text(moneyFmt.format(binaryResult.pnl)+" USDT",30,TEXT,true));gap(card,6);
+        card.addView(text(moneyFmt.format(binaryResult.pnl)+" USDT",30,TEXT,true));gap(card,8);
         card.addView(text((isLong?"Вверх":"Вниз")+" · "+binaryResult.expiryBars+" свеч. · Выплата "+(int)(binaryResult.payoutRate*100)+"%",12,MUTED,false));c.addView(card);gap(c,12);
         LinearLayout chart=card();chart.addView(text(symbol+" · история до экспирации",12,TEXT,true));gap(chart,8);
-        resultChart=new CandlestickChartView(this);resultChart.setCandles(candles.subList(Math.max(0,pivot-48),binaryResult.exitIndex+1));resultChart.setMarkers(binaryResult.entry,binaryResult.exit,Double.NaN);chart.addView(resultChart,lp(-1,230));gap(chart,8);
+        resultChart=new CandlestickChartView(this);resultChart.setCandles(candles.subList(Math.max(0,pivot-48),binaryResult.exitIndex+1));resultChart.setBinaryMarkers(binaryResult.entry,binaryResult.exit);chart.addView(resultChart,lp(-1,230));gap(chart,8);
         chart.addView(text("Вход "+priceFmt.format(binaryResult.entry)+" · Цена экспирации "+priceFmt.format(binaryResult.exit),11,MUTED,false));c.addView(chart);gap(c,12);
-        LinearLayout explain=card();explain.addView(text("КАК ПОЛУЧЕН РЕЗУЛЬТАТ",11,GREEN,true));gap(explain,6);
-        explain.addView(text("Сравнили цену открытия следующей свечи с ценой закрытия свечи экспирации. Будущие данные не использовались при выборе направления. Результат сохранён в календаре.",12,MUTED,false));c.addView(explain);gap(c,14);
+        LinearLayout explain=card();explain.addView(text("КАК ПОЛУЧЕН РЕЗУЛЬТАТ",11,GREEN,true));gap(explain,8);
+        explain.addView(text("Сравнили цену открытия следующей свечи с ценой закрытия свечи экспирации. Будущие данные не использовались при выборе направления. Результат сохранён в календаре.",12,MUTED,false));c.addView(explain);gap(c,12);
         addButton(c,"Следующая историческая ситуация",true,v->{binaryMode=true;showPractice();loadScenario();});addButton(c,"Вернуться в практику",false,v->showPractice());addBottomNav(1);
     }
 
@@ -406,29 +406,29 @@ public class MainActivity extends Activity {
         page=2; beginPage("Настройка сделки", true);
         ScrollView s=scroll(root); LinearLayout c=content(s);
         LinearLayout symbolCard=card();
-        symbolCard.addView(text(symbol+"  ·  "+intervalLabel(interval)+"  ·  ИСТОРИЯ",13,TEXT,true)); gap(symbolCard,5);
+        symbolCard.addView(text(symbol+"  ·  "+intervalLabel(interval)+"  ·  ИСТОРИЯ",13,TEXT,true)); gap(symbolCard,4);
         symbolCard.addView(text("Момент: "+formatDate(candles.get(pivot).time),11,MUTED,false)); gap(symbolCard,12);
         setupChart=new CandlestickChartView(this); setupChart.setCandles(candles.subList(Math.max(0,pivot-42),pivot+1));
-        symbolCard.addView(setupChart,lp(-1,185)); c.addView(symbolCard); gap(c,14);
-        LinearLayout direction=card(); direction.addView(text("НАПРАВЛЕНИЕ ПОЗИЦИИ",10,MUTED,true)); gap(direction,10);
+        symbolCard.addView(setupChart,lp(-1,185)); c.addView(symbolCard); gap(c,12);
+        LinearLayout direction=card(); direction.addView(text("НАПРАВЛЕНИЕ ПОЗИЦИИ",10,MUTED,true)); gap(direction,8);
         LinearLayout sides=row();
         TextView longBtn=button("↗  LONG",isLong), shortBtn=button("↘  SHORT",!isLong);
         sides.addView(longBtn,new LinearLayout.LayoutParams(0,dp(48),1)); View sep=new View(this); sides.addView(sep,lp(8,1)); sides.addView(shortBtn,new LinearLayout.LayoutParams(0,dp(48),1)); direction.addView(sides);
         longBtn.setOnClickListener(v->{isLong=true;longBtn.setBackground(ripple(GREEN,15));longBtn.setTextColor(Color.rgb(14,20,11));shortBtn.setBackground(ripple(PANEL2,15));shortBtn.setTextColor(TEXT);updateRiskPreview();});
         shortBtn.setOnClickListener(v->{isLong=false;shortBtn.setBackground(ripple(GREEN,15));shortBtn.setTextColor(Color.rgb(14,20,11));longBtn.setBackground(ripple(PANEL2,15));longBtn.setTextColor(TEXT);updateRiskPreview();});
-        c.addView(direction); gap(c,14);
+        c.addView(direction); gap(c,12);
         LinearLayout params=card(); params.addView(text("ПАРАМЕТРЫ СДЕЛКИ",10,MUTED,true)); gap(params,12);
-        params.addView(text("Сумма маржи · USDT",12,TEXT,true)); gap(params,6); marginInput=input("100"); params.addView(marginInput,lp(-1,48)); gap(params,12);
-        params.addView(text("Плечо",12,TEXT,true)); gap(params,6);
+        params.addView(text("Сумма маржи · USDT",12,TEXT,true)); gap(params,8); marginInput=input("100"); params.addView(marginInput,lp(-1,48)); gap(params,12);
+        params.addView(text("Плечо",12,TEXT,true)); gap(params,8);
         leverageSpinner=spinner(new String[]{"1×","2×","3×","5×","10×","20×","50×"}); leverageSpinner.setSelection(3); params.addView(leverageSpinner,lp(-1,48)); gap(params,12);
         LinearLayout two=row();
         LinearLayout tpCol=column(),slCol=column();
-        tpCol.addView(text("Take Profit · %",12,TEXT,true)); gap(tpCol,6); tpInput=input("2.0"); tpCol.addView(tpInput,lp(-1,48));
-        slCol.addView(text("Stop Loss · %",12,TEXT,true)); gap(slCol,6); slInput=input("1.0"); slCol.addView(slInput,lp(-1,48));
+        tpCol.addView(text("Take Profit · %",12,TEXT,true)); gap(tpCol,8); tpInput=input("2.0"); tpCol.addView(tpInput,lp(-1,48));
+        slCol.addView(text("Stop Loss · %",12,TEXT,true)); gap(slCol,8); slInput=input("1.0"); slCol.addView(slInput,lp(-1,48));
         two.addView(tpCol,new LinearLayout.LayoutParams(0,-2,1)); View sp=new View(this);two.addView(sp,lp(10,1));two.addView(slCol,new LinearLayout.LayoutParams(0,-2,1)); params.addView(two);
-        c.addView(params); gap(c,14);
+        c.addView(params); gap(c,12);
         LinearLayout preview=card(); preview.addView(text("ПРЕДВАРИТЕЛЬНЫЙ РАСЧЁТ",10,GREEN,true)); gap(preview,8);
-        riskPreview=text("Загружаем расчёт…",13,TEXT,false); preview.addView(riskPreview); gap(preview,7);
+        riskPreview=text("Загружаем расчёт…",13,TEXT,false); preview.addView(riskPreview); gap(preview,8);
         preview.addView(text("Результат считается по следующим реальным OHLC-свечам. Комиссии, funding и точная ликвидация пока не моделируются — это учебный P&L, не расчёт для реальной сделки.",10,MUTED,false)); c.addView(preview); gap(c,16);
         TextView confirm=button("Подтвердить и пройти историю  →",true); c.addView(confirm,lp(-1,54));
         confirm.setOnClickListener(v->{
@@ -483,14 +483,14 @@ public class MainActivity extends Activity {
         ScrollView s=scroll(root); LinearLayout c=content(s);
         boolean win=tradeResult.pnl>0;
         LinearLayout result=card(); result.setBackground(shape(win?Color.rgb(20,31,24):Color.rgb(34,23,26),22,win?Color.rgb(62,100,49):Color.rgb(112,55,61),1));
-        result.addView(text(tradeResult.reason,11,win?GREEN:RED,true)); gap(result,7);
-        result.addView(text(moneyFmt.format(tradeResult.pnl)+" USDT",32,TEXT,true)); gap(result,5);
-        result.addView(text(""+(tradeResult.roi>=0?"+":"")+priceFmt.format(tradeResult.roi)+"% к марже  ·  "+(isLong?"LONG":"SHORT"),12,MUTED,false)); c.addView(result); gap(c,14);
+        result.addView(text(tradeResult.reason,11,win?GREEN:RED,true)); gap(result,8);
+        result.addView(text(moneyFmt.format(tradeResult.pnl)+" USDT",32,TEXT,true)); gap(result,4);
+        result.addView(text(""+(tradeResult.roi>=0?"+":"")+priceFmt.format(tradeResult.roi)+"% к марже  ·  "+(isLong?"LONG":"SHORT"),12,MUTED,false)); c.addView(result); gap(c,12);
         LinearLayout chart=card(); LinearLayout top=row();top.addView(text(symbol+"  ·  "+intervalLabel(interval),13,TEXT,true),new LinearLayout.LayoutParams(0,-2,1));top.addView(text("ИСТОРИЯ РАСКРЫТА",9,GREEN,true));chart.addView(top);gap(chart,12);
         resultChart=new CandlestickChartView(this);
         resultChart.setCandles(candles.subList(Math.max(0,pivot-48),Math.min(candles.size(),tradeResult.exitIndex+1)));
         double entry=tradeResult.entry;double tpp=isLong?entry*(1+tp/100):entry*(1-tp/100);double slp=isLong?entry*(1-sl/100):entry*(1+sl/100);
-        resultChart.setMarkers(entry,tpp,slp);chart.addView(resultChart,lp(-1,250)); c.addView(chart); gap(c,14);
+        resultChart.setMarkers(entry,tpp,slp);chart.addView(resultChart,lp(-1,250)); c.addView(chart); gap(c,12);
         LinearLayout stats=card(); stats.addView(text("ДЕТАЛИ СДЕЛКИ",10,MUTED,true));gap(stats,12);
         addDetail(stats,"Цена входа",priceFmt.format(tradeResult.entry));
         addDetail(stats,"Цена выхода",priceFmt.format(tradeResult.exit));
@@ -499,7 +499,7 @@ public class MainActivity extends Activity {
         addDetail(stats,"Реализованный P&L",moneyFmt.format(tradeResult.pnl)+" USDT");
         addDetail(stats,"Баланс после сделки",moneyFmt.format(balance)+" USDT");
         if(tradeResult.ambiguous){gap(stats,8);stats.addView(text("Обе границы попали внутрь одной OHLC-свечи. Для консервативного результата засчитан Stop Loss первым.",11,RED,false));}
-        c.addView(stats);gap(c,14);
+        c.addView(stats);gap(c,12);
         LinearLayout learning=card();learning.addView(text("РАЗБОР СИТУАЦИИ",10,GREEN,true));gap(learning,8);
         String lessonText = tradeResult.hitTp
                 ? "Цена достигла Take Profit раньше Stop Loss. Проверь, соответствовал ли размер позиции твоему плану риска."
@@ -519,10 +519,10 @@ public class MainActivity extends Activity {
 
     private void showStats() {
         page=4;beginPage("Твой прогресс",true);ScrollView s=scroll(root);LinearLayout c=content(s);
-        LinearLayout hero=card();hero.addView(text("ТВОЯ СТАТИСТИКА",10,GREEN,true));gap(hero,8);hero.addView(text(xp+" XP",32,TEXT,true));gap(hero,4);hero.addView(text("Опыт за реальные исторические тренировки",12,MUTED,false));c.addView(hero);gap(c,14);
-        LinearLayout grid=row();addMetric(grid,"СДЕЛОК",String.valueOf(trades));addMetric(grid,"WIN RATE",trades==0?"—":priceFmt.format((double)wins/trades*100)+"%");c.addView(grid);gap(c,10);
+        LinearLayout hero=card();hero.addView(text("ТВОЯ СТАТИСТИКА",10,GREEN,true));gap(hero,8);hero.addView(text(xp+" XP",32,TEXT,true));gap(hero,4);hero.addView(text("Опыт за реальные исторические тренировки",12,MUTED,false));c.addView(hero);gap(c,12);
+        LinearLayout grid=row();addMetric(grid,"СДЕЛОК",String.valueOf(trades));addMetric(grid,"WIN RATE",trades==0?"—":priceFmt.format((double)wins/trades*100)+"%");c.addView(grid);gap(c,8);
         LinearLayout grid2=row();addMetric(grid2,"ЧИСТЫЙ P&L",moneyFmt.format(netPnl)+" USDT");addMetric(grid2,"БАЛАНС",priceFmt.format(balance)+" USDT");c.addView(grid2);gap(c,16);
-        LinearLayout note=card();note.addView(text("ЧЕСТНАЯ СТАТИСТИКА",10,GREEN,true));gap(note,7);note.addView(text("Все показатели собраны только из завершённых симуляций на исторических свечах. Положительный результат одной сделки не гарантирует будущую прибыль.",12,MUTED,false));c.addView(note);gap(c,18);
+        LinearLayout note=card();note.addView(text("ЧЕСТНАЯ СТАТИСТИКА",10,GREEN,true));gap(note,8);note.addView(text("Все показатели собраны только из завершённых симуляций на исторических свечах. Положительный результат одной сделки не гарантирует будущую прибыль.",12,MUTED,false));c.addView(note);gap(c,16);
         addButton(c,"Вернуться к тренировке",true,v->showPractice());
         addBottomNav(2);
     }
@@ -533,10 +533,10 @@ public class MainActivity extends Activity {
 
     private void showLessons() {
         page=5;beginPage("Карта обучения",true);ScrollView s=scroll(root);LinearLayout c=content(s);
-        c.addView(text("От первых свечей до уверенного риск-менеджмента — шаг за шагом.",14,MUTED,false));gap(c,18);
+        c.addView(text("От первых свечей до уверенного риск-менеджмента — шаг за шагом.",14,MUTED,false));gap(c,16);
         String[][] lessons=lessonCatalog();
         for(int i=0;i<lessons.length;i++){
-            LinearLayout l=card();l.addView(text(lessons[i][0],10,GREEN,true));gap(l,7);l.addView(text(lessons[i][1],17,TEXT,true));gap(l,5);l.addView(text(lessons[i][2],12,MUTED,false));gap(l,11);
+            LinearLayout l=card();l.addView(text(lessons[i][0],10,GREEN,true));gap(l,8);l.addView(text(lessons[i][1],17,TEXT,true));gap(l,4);l.addView(text(lessons[i][2],12,MUTED,false));gap(l,12);
             final int idx=i;addButton(l,"Открыть урок →",true,v->showLessonDetail(idx));
             LinearLayout.LayoutParams p=lp(-1,-2);p.bottomMargin=dp(10);c.addView(l,p);
         }
@@ -550,7 +550,7 @@ public class MainActivity extends Activity {
         c.addView(text("Начни свой путь в трейдинге.",27,TEXT,true));gap(c,8);
         c.addView(text("Создай профиль, чтобы сохранять прогресс и историю сделок на этом устройстве.",14,MUTED,false));gap(c,20);
         LinearLayout box=card();box.addView(text("ИМЯ ИЛИ НИКНЕЙМ",10,GREEN,true));gap(box,8);EditText name=textInput("");name.setHint("Как к тебе обращаться?");box.addView(name,lp(-1,50));gap(box,12);
-        box.addView(text("ПОЧТА · НЕОБЯЗАТЕЛЬНО",10,MUTED,true));gap(box,6);EditText email=textInput("");email.setHint("name@example.com");email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);box.addView(email,lp(-1,50));c.addView(box);gap(c,16);
+        box.addView(text("ПОЧТА · НЕОБЯЗАТЕЛЬНО",10,MUTED,true));gap(box,8);EditText email=textInput("");email.setHint("name@example.com");email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);box.addView(email,lp(-1,50));c.addView(box);gap(c,16);
         addButton(c,"Продолжить →",true,v->{String n=name.getText().toString().trim();if(n.length()<2){toast("Введи имя или никнейм (минимум 2 символа)");return;}prefs.edit().putString("profile_name",n).putString("profile_email",email.getText().toString().trim()).apply();showHome();});
         c.addView(text("Это локальный профиль без облачной регистрации. Данные хранятся на устройстве.",11,MUTED,false));
     }
@@ -572,8 +572,8 @@ public class MainActivity extends Activity {
 
     private void showLessonDetail(int index){
         String[][] data=lessonCatalog();if(index<0||index>=data.length)return;page=7;beginPage("Урок "+(index+1)+" / "+data.length,true);
-        ScrollView sv=scroll(root);LinearLayout c=content(sv);LinearLayout hero=card();hero.addView(text(data[index][0],10,GREEN,true));gap(hero,10);hero.addView(text(data[index][1],24,TEXT,true));gap(hero,14);hero.addView(text(data[index][2],15,MUTED,false));c.addView(hero);gap(c,14);
-        LinearLayout note=card();note.addView(text("ПРАКТИЧЕСКИЙ ВЫВОД",10,GREEN,true));gap(note,7);note.addView(text("Перед каждой сделкой определи сценарий, точку отмены и максимальный допустимый убыток. Не принимай решение только по одному индикатору.",13,TEXT,false));c.addView(note);gap(c,14);
+        ScrollView sv=scroll(root);LinearLayout c=content(sv);LinearLayout hero=card();hero.addView(text(data[index][0],10,GREEN,true));gap(hero,8);hero.addView(text(data[index][1],24,TEXT,true));gap(hero,12);hero.addView(text(data[index][2],15,MUTED,false));c.addView(hero);gap(c,12);
+        LinearLayout note=card();note.addView(text("ПРАКТИЧЕСКИЙ ВЫВОД",10,GREEN,true));gap(note,8);note.addView(text("Перед каждой сделкой определи сценарий, точку отмены и максимальный допустимый убыток. Не принимай решение только по одному индикатору.",13,TEXT,false));c.addView(note);gap(c,12);
         boolean done=prefs.getBoolean("lesson_done_"+index,false);addButton(c,done?"Урок пройден ✓":"Отметить урок пройденным · +25 XP",true,v->{if(!prefs.getBoolean("lesson_done_"+index,false)){xp+=25;prefs.edit().putBoolean("lesson_done_"+index,true).apply();persist();}showLessonDetail(index);});
         if(index<data.length-1)addButton(c,"Следующий урок →",false,v->showLessonDetail(index+1));else addButton(c,"Перейти к практике →",false,v->showPractice());addBottomNav(0);
     }
@@ -583,18 +583,18 @@ public class MainActivity extends Activity {
         Calendar cal=Calendar.getInstance();cal.add(Calendar.MONTH,calendarMonthOffset);int year=cal.get(Calendar.YEAR),month=cal.get(Calendar.MONTH);
         LinearLayout nav=row();TextView prev=text("‹",28,TEXT,true);prev.setGravity(Gravity.CENTER);nav.addView(prev,lp(40,42));TextView title=text(new SimpleDateFormat("LLLL yyyy",new Locale("ru")).format(cal.getTime()),18,TEXT,true);title.setGravity(Gravity.CENTER);nav.addView(title,new LinearLayout.LayoutParams(0,dp(42),1));TextView next=text("›",28,TEXT,true);next.setGravity(Gravity.CENTER);nav.addView(next,lp(40,42));c.addView(nav);prev.setOnClickListener(v->{calendarMonthOffset--;showCalendar();});next.setOnClickListener(v->{calendarMonthOffset++;showCalendar();});
         double total=0;int cnt=0,w=0,l=0;for(JSONObject t:tradeHistory){Calendar d=Calendar.getInstance();d.setTimeInMillis(t.optLong("time"));if(d.get(Calendar.YEAR)==year&&d.get(Calendar.MONTH)==month){double p=t.optDouble("pnl");total+=p;cnt++;if(p>0)w++;else if(p<0)l++;}}
-        LinearLayout sum=card();sum.addView(text("МЕСЯЧНЫЙ P&L",10,MUTED,true));gap(sum,6);sum.addView(text((total>=0?"+":"")+moneyFmt.format(total)+" USDT",26,total>=0?GREEN:RED,true));gap(sum,4);sum.addView(text(cnt+" сделок · "+w+" прибыльных · "+l+" убыточных",12,MUTED,false));c.addView(sum);gap(c,12);
+        LinearLayout sum=card();sum.addView(text("МЕСЯЧНЫЙ P&L",10,MUTED,true));gap(sum,8);sum.addView(text((total>=0?"+":"")+moneyFmt.format(total)+" USDT",26,total>=0?GREEN:RED,true));gap(sum,4);sum.addView(text(cnt+" сделок · "+w+" прибыльных · "+l+" убыточных",12,MUTED,false));c.addView(sum);gap(c,12);
         LinearLayout weekdays=row();for(String x:new String[]{"Пн","Вт","Ср","Чт","Пт","Сб","Вс"}){TextView v=text(x,10,MUTED,true);v.setGravity(Gravity.CENTER);weekdays.addView(v,new LinearLayout.LayoutParams(0,dp(28),1));}c.addView(weekdays);
         Calendar first=new GregorianCalendar(year,month,1);int days=first.getActualMaximum(Calendar.DAY_OF_MONTH),offset=(first.get(Calendar.DAY_OF_WEEK)+5)%7,rows=(offset+days+6)/7;
-        for(int r=0;r<rows;r++){LinearLayout line=row();for(int col=0;col<7;col++){int day=r*7+col-offset;LinearLayout cell=column();cell.setGravity(Gravity.TOP|Gravity.CENTER_HORIZONTAL);cell.setBackground(shape(PANEL,9,BORDER,1));pad(cell,2,5,2,3);if(day>=1&&day<=days){cell.addView(text(String.valueOf(day),11,TEXT,true));double pnl=0;int n=0;for(JSONObject t:tradeHistory){Calendar d=Calendar.getInstance();d.setTimeInMillis(t.optLong("time"));if(d.get(Calendar.YEAR)==year&&d.get(Calendar.MONTH)==month&&d.get(Calendar.DAY_OF_MONTH)==day){pnl+=t.optDouble("pnl");n++;}}if(n>0){gap(cell,3);TextView v=text((pnl>=0?"+":"")+new DecimalFormat("0.#").format(pnl),8,pnl>=0?GREEN:RED,true);v.setGravity(Gravity.CENTER);cell.addView(v);TextView q=text(n+" сд.",8,MUTED,false);q.setGravity(Gravity.CENTER);cell.addView(q);cell.setBackground(shape(pnl>=0?Color.rgb(20,43,30):Color.rgb(47,27,31),9,BORDER,1));}}line.addView(cell,new LinearLayout.LayoutParams(0,dp(64),1));}LinearLayout.LayoutParams rp=lp(-1,64);rp.bottomMargin=dp(4);c.addView(line,rp);}
-        gap(c,14);c.addView(text("СДЕЛКИ ЗА МЕСЯЦ",10,MUTED,true));gap(c,8);boolean any=false;
-        for(int i=tradeHistory.size()-1;i>=0;i--){JSONObject t=tradeHistory.get(i);Calendar d=Calendar.getInstance();d.setTimeInMillis(t.optLong("time"));if(d.get(Calendar.YEAR)==year&&d.get(Calendar.MONTH)==month){any=true;LinearLayout item=card();LinearLayout row=row();row.addView(text(t.optString("symbol")+" · "+t.optString("side"),13,TEXT,true),new LinearLayout.LayoutParams(0,-2,1));double p=t.optDouble("pnl");row.addView(text((p>=0?"+":"")+moneyFmt.format(p)+" USDT",13,p>=0?GREEN:RED,true));item.addView(row);gap(item,5);item.addView(text(new SimpleDateFormat("dd MMM · HH:mm",new Locale("ru")).format(new Date(t.optLong("time")))+" · "+t.optString("reason"),10,MUTED,false));LinearLayout.LayoutParams ip=lp(-1,-2);ip.bottomMargin=dp(7);c.addView(item,ip);}}
+        for(int r=0;r<rows;r++){LinearLayout line=row();for(int col=0;col<7;col++){int day=r*7+col-offset;LinearLayout cell=column();cell.setGravity(Gravity.TOP|Gravity.CENTER_HORIZONTAL);cell.setBackground(shape(PANEL,9,BORDER,1));pad(cell,2,5,2,3);if(day>=1&&day<=days){cell.addView(text(String.valueOf(day),11,TEXT,true));double pnl=0;int n=0;for(JSONObject t:tradeHistory){Calendar d=Calendar.getInstance();d.setTimeInMillis(t.optLong("time"));if(d.get(Calendar.YEAR)==year&&d.get(Calendar.MONTH)==month&&d.get(Calendar.DAY_OF_MONTH)==day){pnl+=t.optDouble("pnl");n++;}}if(n>0){gap(cell,4);TextView v=text((pnl>=0?"+":"")+new DecimalFormat("0.#").format(pnl),8,pnl>=0?GREEN:RED,true);v.setGravity(Gravity.CENTER);cell.addView(v);TextView q=text(n+" сд.",8,MUTED,false);q.setGravity(Gravity.CENTER);cell.addView(q);cell.setBackground(shape(pnl>=0?Color.rgb(20,43,30):Color.rgb(47,27,31),9,BORDER,1));}}line.addView(cell,new LinearLayout.LayoutParams(0,dp(64),1));}LinearLayout.LayoutParams rp=lp(-1,64);rp.bottomMargin=dp(4);c.addView(line,rp);}
+        gap(c,12);c.addView(text("СДЕЛКИ ЗА МЕСЯЦ",10,MUTED,true));gap(c,8);boolean any=false;
+        for(int i=tradeHistory.size()-1;i>=0;i--){JSONObject t=tradeHistory.get(i);Calendar d=Calendar.getInstance();d.setTimeInMillis(t.optLong("time"));if(d.get(Calendar.YEAR)==year&&d.get(Calendar.MONTH)==month){any=true;LinearLayout item=card();LinearLayout row=row();row.addView(text(t.optString("symbol")+" · "+t.optString("side"),13,TEXT,true),new LinearLayout.LayoutParams(0,-2,1));double p=t.optDouble("pnl");row.addView(text((p>=0?"+":"")+moneyFmt.format(p)+" USDT",13,p>=0?GREEN:RED,true));item.addView(row);gap(item,4);item.addView(text(new SimpleDateFormat("dd MMM · HH:mm",new Locale("ru")).format(new Date(t.optLong("time")))+" · "+t.optString("reason"),10,MUTED,false));LinearLayout.LayoutParams ip=lp(-1,-2);ip.bottomMargin=dp(7);c.addView(item,ip);}}
         if(!any)c.addView(text("Сделок за этот месяц пока нет. После каждой завершённой тренировки запись появится здесь автоматически.",12,MUTED,false));addBottomNav(2);
     }
 
     private void showProfile(){
         page=9;beginPage("Личный кабинет",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);String name=prefs.getString("profile_name","Трейдер");
-        LinearLayout hero=card();TextView avatar=text(name.substring(0,1).toUpperCase(Locale.getDefault()),28,BG,true);avatar.setGravity(Gravity.CENTER);avatar.setBackground(shape(GREEN,28,GREEN,0));hero.addView(avatar,lp(58,58));gap(hero,10);hero.addView(text(name,23,TEXT,true));gap(hero,4);hero.addView(text(prefs.getString("profile_email","Локальный профиль"),12,MUTED,false));gap(hero,10);hero.addView(text("Уровень "+(xp/500+1)+" · "+xp+" XP",13,GREEN,true));c.addView(hero);gap(c,14);
+        LinearLayout hero=card();TextView avatar=text(name.substring(0,1).toUpperCase(Locale.getDefault()),28,BG,true);avatar.setGravity(Gravity.CENTER);avatar.setBackground(shape(GREEN,28,GREEN,0));hero.addView(avatar,lp(58,58));gap(hero,8);hero.addView(text(name,23,TEXT,true));gap(hero,4);hero.addView(text(prefs.getString("profile_email","Локальный профиль"),12,MUTED,false));gap(hero,8);hero.addView(text("Уровень "+(xp/500+1)+" · "+xp+" XP",13,GREEN,true));c.addView(hero);gap(c,12);
         LinearLayout metrics=row();addMetric(metrics,"СДЕЛОК",String.valueOf(trades));addMetric(metrics,"WIN RATE",trades==0?"—":priceFmt.format((double)wins/trades*100)+"%");c.addView(metrics);gap(c,12);
         addButton(c,"Календарь сделок",false,v->showCalendar());addButton(c,"Мой прогресс",false,v->showStats());addButton(c,"Карта обучения",false,v->showLessons());
         addButton(c,"Изменить имя",false,v->{EditText e=textInput(name);new android.app.AlertDialog.Builder(this).setTitle("Имя профиля").setView(e).setNegativeButton("Отмена",null).setPositiveButton("Сохранить",(d,w)->{String n=e.getText().toString().trim();if(n.length()>1){prefs.edit().putString("profile_name",n).apply();showProfile();}}).show();});
@@ -621,15 +621,17 @@ public class MainActivity extends Activity {
         private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
         private List<MarketData.Candle> values=new ArrayList<>();
         private double entry=Double.NaN,tp=Double.NaN,sl=Double.NaN;
+        private String tpTag="TP",slTag="SL";
         private String emptyLabel="";
         CandlestickChartView(Context context){super(context);setLayerType(View.LAYER_TYPE_SOFTWARE,null);}
         void setCandles(List<MarketData.Candle> data){values=new ArrayList<>(data);setAlpha(.35f);animate().alpha(1f).setDuration(180).start();invalidate();}
-        void setMarkers(double e,double t,double s){entry=e;tp=t;sl=s;invalidate();}
+        void setMarkers(double e,double t,double s){entry=e;tp=t;sl=s;tpTag="TP";slTag="SL";invalidate();}
+        void setBinaryMarkers(double e,double expiry){entry=e;tp=expiry;sl=Double.NaN;tpTag="EXP";invalidate();}
         void setEmptyLabel(String s){emptyLabel=s;invalidate();}
         private void line(Canvas c,float x1,float y1,float x2,float y2,int color,float width){p.setColor(color);p.setStrokeWidth(width);p.setStyle(Paint.Style.STROKE);p.setPathEffect(null);c.drawLine(x1,y1,x2,y2,p);p.setStyle(Paint.Style.FILL);}
         private void label(Canvas c,String s,float x,float y,int color,float size){p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));p.setStyle(Paint.Style.FILL);c.drawText(s,x,y,p);}
         private double ema(int index,int period){double alpha=2.0/(period+1.0),v=values.get(0).close;for(int i=1;i<=index;i++)v=values.get(i).close*alpha+v*(1-alpha);return v;}
-        private double rsi(int period){if(values.size()<period+1)return Double.NaN;double gain=0,loss=0;for(int i=values.size()-period;i<values.size();i++){double d=values.get(i).close-values.get(i-1).close;if(d>0)gain+=d;else loss-=d;}if(loss==0)return 100;double rs=(gain/period)/(loss/period);return 100-(100/(1+rs));}
+        private double rsi(int period){if(values.size()<period+1)return Double.NaN;double gain=0,loss=0;for(int i=1;i<=period;i++){double d=values.get(i).close-values.get(i-1).close;if(d>0)gain+=d;else loss-=d;}double ag=gain/period,al=loss/period;for(int i=period+1;i<values.size();i++){double d=values.get(i).close-values.get(i-1).close;ag=(ag*(period-1)+Math.max(0,d))/period;al=(al*(period-1)+Math.max(0,-d))/period;}if(al==0)return 100;double rs=ag/al;return 100-(100/(1+rs));}
         @Override protected void onDraw(Canvas canvas){
             super.onDraw(canvas);float w=getWidth(),h=getHeight();canvas.drawColor(PANEL);
             if(values.isEmpty()){label(canvas,emptyLabel.length()==0?"Нет исторических данных":emptyLabel,dp(12),h/2,TEXT,dp(12));return;}
@@ -654,8 +656,8 @@ public class MainActivity extends Activity {
             drawAverage(canvas,20,Color.rgb(115,181,139),left,step,min,max,top,priceBottom);
             drawAverage(canvas,50,Color.rgb(139,147,158),left,step,min,max,top,priceBottom);
             drawLevel(canvas,left,right,min,max,top,priceBottom,entry,Color.rgb(220,224,230),"IN");
-            drawLevel(canvas,left,right,min,max,top,priceBottom,tp,GREEN,"TP");
-            drawLevel(canvas,left,right,min,max,top,priceBottom,sl,RED,"SL");
+            drawLevel(canvas,left,right,min,max,top,priceBottom,tp,GREEN,tpTag);
+            drawLevel(canvas,left,right,min,max,top,priceBottom,sl,RED,slTag);
             MarketData.Candle last=values.get(n-1);double rv=rsi(14);
             String head="O "+priceFmt.format(last.open)+"   H "+priceFmt.format(last.high)+"   L "+priceFmt.format(last.low)+"   C "+priceFmt.format(last.close);
             label(canvas,head,left,dp(12),TEXT,dp(8));
