@@ -137,7 +137,7 @@ public class MainActivity extends Activity {
     private void gap(LinearLayout parent, int height) { View v = new View(this); parent.addView(v, lp(1, height)); }
 
     private LinearLayout card() {
-        LinearLayout c = column(); c.setBackground(shape(PANEL, 22, BORDER, 1)); pad(c, 16, 16, 16, 16); return c;
+        LinearLayout c = column(); c.setBackground(shape(PANEL, 16, BORDER, 1)); pad(c, 16, 16, 16, 16); return c;
     }
 
     private TextView button(String label, boolean primary) {
@@ -549,8 +549,8 @@ public class MainActivity extends Activity {
         gap(c,24);TextView logo=text("TQ",32,BG,true);logo.setGravity(Gravity.CENTER);logo.setBackground(shape(GREEN,20,GREEN,0));c.addView(logo,lp(76,76));gap(c,20);
         c.addView(text("Начни свой путь в трейдинге.",27,TEXT,true));gap(c,8);
         c.addView(text("Создай профиль, чтобы сохранять прогресс и историю сделок на этом устройстве.",14,MUTED,false));gap(c,20);
-        LinearLayout box=card();box.addView(text("ИМЯ ИЛИ НИКНЕЙМ",10,GREEN,true));gap(box,8);EditText name=input("");name.setHint("Как к тебе обращаться?");box.addView(name,lp(-1,50));gap(box,12);
-        box.addView(text("ПОЧТА · НЕОБЯЗАТЕЛЬНО",10,MUTED,true));gap(box,6);EditText email=input("");email.setHint("name@example.com");email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);box.addView(email,lp(-1,50));c.addView(box);gap(c,16);
+        LinearLayout box=card();box.addView(text("ИМЯ ИЛИ НИКНЕЙМ",10,GREEN,true));gap(box,8);EditText name=textInput("");name.setHint("Как к тебе обращаться?");box.addView(name,lp(-1,50));gap(box,12);
+        box.addView(text("ПОЧТА · НЕОБЯЗАТЕЛЬНО",10,MUTED,true));gap(box,6);EditText email=textInput("");email.setHint("name@example.com");email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);box.addView(email,lp(-1,50));c.addView(box);gap(c,16);
         addButton(c,"Продолжить →",true,v->{String n=name.getText().toString().trim();if(n.length()<2){toast("Введи имя или никнейм (минимум 2 символа)");return;}prefs.edit().putString("profile_name",n).putString("profile_email",email.getText().toString().trim()).apply();showHome();});
         c.addView(text("Это локальный профиль без облачной регистрации. Данные хранятся на устройстве.",11,MUTED,false));
     }
@@ -623,42 +623,55 @@ public class MainActivity extends Activity {
         private double entry=Double.NaN,tp=Double.NaN,sl=Double.NaN;
         private String emptyLabel="";
         CandlestickChartView(Context context){super(context);setLayerType(View.LAYER_TYPE_SOFTWARE,null);}
-        void setCandles(List<MarketData.Candle> data){values=new ArrayList<>(data);setAlpha(.35f);animate().alpha(1f).setDuration(360).start();invalidate();}
+        void setCandles(List<MarketData.Candle> data){values=new ArrayList<>(data);setAlpha(.35f);animate().alpha(1f).setDuration(180).start();invalidate();}
         void setMarkers(double e,double t,double s){entry=e;tp=t;sl=s;invalidate();}
         void setEmptyLabel(String s){emptyLabel=s;invalidate();}
-        private void line(Canvas c,float x1,float y1,float x2,float y2,int color,float width){p.setColor(color);p.setStrokeWidth(width);p.setStyle(Paint.Style.STROKE);c.drawLine(x1,y1,x2,y2,p);p.setStyle(Paint.Style.FILL);}
-        private void label(Canvas c,String s,float x,float y,int color,float size){p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));c.drawText(s,x,y,p);}
+        private void line(Canvas c,float x1,float y1,float x2,float y2,int color,float width){p.setColor(color);p.setStrokeWidth(width);p.setStyle(Paint.Style.STROKE);p.setPathEffect(null);c.drawLine(x1,y1,x2,y2,p);p.setStyle(Paint.Style.FILL);}
+        private void label(Canvas c,String s,float x,float y,int color,float size){p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));p.setStyle(Paint.Style.FILL);c.drawText(s,x,y,p);}
+        private double ema(int index,int period){double alpha=2.0/(period+1.0),v=values.get(0).close;for(int i=1;i<=index;i++)v=values.get(i).close*alpha+v*(1-alpha);return v;}
+        private double rsi(int period){if(values.size()<period+1)return Double.NaN;double gain=0,loss=0;for(int i=values.size()-period;i<values.size();i++){double d=values.get(i).close-values.get(i-1).close;if(d>0)gain+=d;else loss-=d;}if(loss==0)return 100;double rs=(gain/period)/(loss/period);return 100-(100/(1+rs));}
         @Override protected void onDraw(Canvas canvas){
             super.onDraw(canvas);float w=getWidth(),h=getHeight();canvas.drawColor(PANEL);
-            if(values.isEmpty()){label(canvas,emptyLabel.length()==0?"Загрузка истории…":emptyLabel,dp(12),h/2,TEXT,dp(12));return;}
-            float left=dp(8),right=w-dp(8),top=dp(12),bottom=h-dp(20);int n=values.size();
-            double min=Double.MAX_VALUE,max=-Double.MAX_VALUE;
-            for(MarketData.Candle c:values){min=Math.min(min,c.low);max=Math.max(max,c.high);}
-            if(Double.isFinite(entry)){min=Math.min(min,Math.min(entry,Math.min(tp,sl)));max=Math.max(max,Math.max(entry,Math.max(tp,sl)));}
-            double padRange=(max-min)*.10;if(padRange==0)padRange=max*.005;min-=padRange;max+=padRange;
-            float plotH=bottom-top,plotW=right-left;
-            for(int i=0;i<5;i++){float y=top+plotH*i/4f;line(canvas,left,y,right,y,Color.rgb(38,44,53),1);}
-            for(int i=0;i<5;i++){float x=left+plotW*i/4f;line(canvas,x,top,x,bottom,Color.rgb(34,40,48),1);}
-            float step=plotW/n,bodyW=Math.max(dp(2),Math.min(dp(8),step*.58f));
+            if(values.isEmpty()){label(canvas,emptyLabel.length()==0?"Нет исторических данных":emptyLabel,dp(12),h/2,TEXT,dp(12));return;}
+            int n=values.size();float left=dp(8),right=w-dp(8),top=dp(34),priceBottom=h-dp(34),volumeTop=h-dp(29),bottom=h-dp(5);
+            double min=Double.MAX_VALUE,max=-Double.MAX_VALUE,maxVol=0;
+            for(MarketData.Candle c:values){min=Math.min(min,c.low);max=Math.max(max,c.high);maxVol=Math.max(maxVol,c.volume);}
+            if(Double.isFinite(entry)){min=Math.min(min,entry);max=Math.max(max,entry);}
+            if(Double.isFinite(tp)){min=Math.min(min,tp);max=Math.max(max,tp);}
+            if(Double.isFinite(sl)){min=Math.min(min,sl);max=Math.max(max,sl);}
+            double range=max-min;if(range<=0)range=Math.max(max*.002,0.000001);double extra=range*.08;min-=extra;max+=extra;
+            float plotH=priceBottom-top,plotW=right-left;
+            for(int i=0;i<4;i++){float y=top+plotH*i/3f;line(canvas,left,y,right,y,Color.rgb(43,48,56),dp(.6f));}
+            float step=plotW/n,bodyW=Math.max(dp(1.5f),Math.min(dp(7),step*.58f));
             for(int i=0;i<n;i++){
                 MarketData.Candle c=values.get(i);float x=left+(i+.5f)*step;
-                float yO=map(c.open,min,max,top,bottom),yC=map(c.close,min,max,top,bottom),yH=map(c.high,min,max,top,bottom),yL=map(c.low,min,max,top,bottom);
-                int color=c.close>=c.open?Color.rgb(94,214,139):Color.rgb(246,99,107);
-                p.setColor(color);p.setStrokeWidth(dp(1.2f));canvas.drawLine(x,yH,x,yL,p);
-                float y=Math.min(yO,yC),bh=Math.max(dp(1.5f),Math.abs(yC-yO));canvas.drawRoundRect(new RectF(x-bodyW/2,y,x+bodyW/2,y+bh),dp(1),dp(1),p);
+                float yO=map(c.open,min,max,top,priceBottom),yC=map(c.close,min,max,top,priceBottom),yH=map(c.high,min,max,top,priceBottom),yL=map(c.low,min,max,top,priceBottom);
+                int color=c.close>=c.open?Color.rgb(78,174,119):Color.rgb(207,86,91);
+                p.setColor(color);p.setStrokeWidth(dp(1));canvas.drawLine(x,yH,x,yL,p);
+                float y=Math.min(yO,yC),bh=Math.max(dp(1.5f),Math.abs(yC-yO));canvas.drawRect(x-bodyW/2,y,x+bodyW/2,y+bh,p);
+                if(maxVol>0){float vh=(float)(c.volume/maxVol)*dp(20);p.setColor(Color.argb(100,color==Color.rgb(78,174,119)?78:207, color==Color.rgb(78,174,119)?174:86, color==Color.rgb(78,174,119)?119:91));canvas.drawRect(x-bodyW/2, bottom-vh,x+bodyW/2,bottom,p);}
             }
-            drawLevel(canvas,left,right,min,max,top,bottom,entry,Color.rgb(218,223,230),"ENTRY");
-            drawLevel(canvas,left,right,min,max,top,bottom,tp,GREEN,"TP");
-            drawLevel(canvas,left,right,min,max,top,bottom,sl,RED,"SL");
-            label(canvas,priceFmt.format(max),left+dp(3),top+dp(10),MUTED,dp(8));
-            label(canvas,priceFmt.format(min),left+dp(3),bottom-dp(3),MUTED,dp(8));
+            drawAverage(canvas,20,Color.rgb(115,181,139),left,step,min,max,top,priceBottom);
+            drawAverage(canvas,50,Color.rgb(139,147,158),left,step,min,max,top,priceBottom);
+            drawLevel(canvas,left,right,min,max,top,priceBottom,entry,Color.rgb(220,224,230),"IN");
+            drawLevel(canvas,left,right,min,max,top,priceBottom,tp,GREEN,"TP");
+            drawLevel(canvas,left,right,min,max,top,priceBottom,sl,RED,"SL");
+            MarketData.Candle last=values.get(n-1);double rv=rsi(14);
+            String head="O "+priceFmt.format(last.open)+"   H "+priceFmt.format(last.high)+"   L "+priceFmt.format(last.low)+"   C "+priceFmt.format(last.close);
+            label(canvas,head,left,dp(12),TEXT,dp(8));
+            String stats="EMA20 "+priceFmt.format(ema(n-1,20))+"   EMA50 "+priceFmt.format(ema(n-1,50))+"   RSI14 "+(Double.isNaN(rv)?"—":priceFmt.format(rv));
+            label(canvas,stats,left,dp(25),MUTED,dp(8));
+            label(canvas,"VOL",right-dp(25),bottom-dp(1),MUTED,dp(7));
+        }
+        private void drawAverage(Canvas canvas,int period,int color,float left,float step,double min,double max,float top,float bottom){
+            if(values.size()<2)return;Path path=new Path();for(int i=0;i<values.size();i++){float x=left+(i+.5f)*step;float y=map(ema(i,period),min,max,top,bottom);if(i==0)path.moveTo(x,y);else path.lineTo(x,y);}
+            p.setColor(color);p.setStrokeWidth(dp(1.2f));p.setStyle(Paint.Style.STROKE);p.setPathEffect(null);canvas.drawPath(path,p);p.setStyle(Paint.Style.FILL);
         }
         private float map(double v,double min,double max,float top,float bottom){return bottom-(float)((v-min)/(max-min))*(bottom-top);}
         private void drawLevel(Canvas canvas,float left,float right,double min,double max,float top,float bottom,double value,int color,String tag){
             if(!Double.isFinite(value)||value<min||value>max)return;float y=map(value,min,max,top,bottom);
-            p.setColor(color);p.setStrokeWidth(dp(1));p.setPathEffect(new android.graphics.DashPathEffect(new float[]{dp(5),dp(4)},0));canvas.drawLine(left,y,right,y,p);p.setPathEffect(null);
-            p.setStyle(Paint.Style.FILL);p.setColor(color);canvas.drawRoundRect(new RectF(right-dp(30),y-dp(9),right,y+dp(9)),dp(5),dp(5),p);
-            p.setColor(Color.rgb(10,13,16));p.setTextSize(dp(8));p.setTypeface(Typeface.DEFAULT_BOLD);canvas.drawText(tag,right-dp(25),y+dp(3),p);
+            p.setColor(color);p.setStrokeWidth(dp(1));p.setPathEffect(new android.graphics.DashPathEffect(new float[]{dp(4),dp(4)},0));canvas.drawLine(left,y,right,y,p);p.setPathEffect(null);
+            p.setStyle(Paint.Style.FILL);p.setColor(color);canvas.drawRoundRect(new RectF(right-dp(26),y-dp(8),right,y+dp(8)),dp(4),dp(4),p);
+            p.setColor(BG);p.setTextSize(dp(7));p.setTypeface(Typeface.DEFAULT_BOLD);canvas.drawText(tag,right-dp(22),y+dp(2.5f),p);
         }
-    }
-}
+    }}
