@@ -228,7 +228,7 @@ public class MainActivity extends Activity {
         LinearLayout calendarTile=card();calendarTile.addView(text("КАЛЕНДАРЬ",10,GREEN,true));gap(calendarTile,8);calendarTile.addView(text("Мои сделки",15,TEXT,true));gap(calendarTile,4);calendarTile.addView(text("Автоматический P&L",11,MUTED,false));calendarTile.setOnClickListener(v->showCalendar());LinearLayout.LayoutParams calp=new LinearLayout.LayoutParams(0,-2,1);calp.leftMargin=dp(8);quick.addView(calendarTile,calp);c.addView(quick);
         gap(c,24);
         LinearLayout section = row(); section.addView(text("ТВОЙ ПУТЬ", 11, MUTED, true), new LinearLayout.LayoutParams(0, -2, 1));
-        TextView all = text("Все уроки  ↗", 12, GREEN, true); section.addView(all); all.setOnClickListener(v -> showLessons()); c.addView(section);
+        TextView all = text("Все уроки", 12, GREEN, true); section.addView(all); all.setOnClickListener(v -> showLessons()); c.addView(section);
         gap(c, 12);
         addLessonRow(c, "01", "Как читать свечи", "Тело, тени и движение цены", true, 1);
         addLessonRow(c, "02", "LONG и SHORT", "Два направления сделки", true, 2);
@@ -274,7 +274,7 @@ public class MainActivity extends Activity {
         classic.setOnClickListener(v->{if(binaryMode){binaryMode=false;showPractice();}});binary.setOnClickListener(v->{if(!binaryMode){binaryMode=true;showPractice();}});c.addView(modeCard);gap(c,12);
         LinearLayout chartCard = card();
         LinearLayout chartTop = row(); chartTop.addView(text("График", 10, MUTED, true),new LinearLayout.LayoutParams(0,-2,1));
-        chartTop.addView(text("Bybit · Linear", 10, GREEN, true)); chartCard.addView(chartTop); gap(chartCard, 12);
+        chartTop.addView(text("Bybit · Linear", 10, MUTED, false)); chartCard.addView(chartTop);gap(chartCard,8);chartCard.addView(text("Свечи · EMA 20/50 · RSI 14 · объём",10,MUTED,false));gap(chartCard,8);
         practiceChart = new CandlestickChartView(this); practiceChart.setEmptyLabel("Загружаем историю рынка"); chartCard.addView(practiceChart,lp(-1,230)); gap(chartCard, 8);
         chartCard.addView(text("Будущие свечи скрыты. Решение принимается только по данным, доступным на тот момент.", 11, MUTED, false));
         c.addView(chartCard); gap(c, 16);
@@ -412,7 +412,7 @@ public class MainActivity extends Activity {
         symbolCard.addView(setupChart,lp(-1,185)); c.addView(symbolCard); gap(c,12);
         LinearLayout direction=card(); direction.addView(text("НАПРАВЛЕНИЕ ПОЗИЦИИ",10,MUTED,true)); gap(direction,8);
         LinearLayout sides=row();
-        TextView longBtn=button("↗  LONG",isLong), shortBtn=button("↘  SHORT",!isLong);
+        TextView longBtn=button("LONG",isLong), shortBtn=button("SHORT",!isLong);
         sides.addView(longBtn,new LinearLayout.LayoutParams(0,dp(48),1)); View sep=new View(this); sides.addView(sep,lp(8,1)); sides.addView(shortBtn,new LinearLayout.LayoutParams(0,dp(48),1)); direction.addView(sides);
         longBtn.setOnClickListener(v->{isLong=true;longBtn.setBackground(ripple(GREEN,15));longBtn.setTextColor(Color.rgb(14,20,11));shortBtn.setBackground(ripple(PANEL2,15));shortBtn.setTextColor(TEXT);updateRiskPreview();});
         shortBtn.setOnClickListener(v->{isLong=false;shortBtn.setBackground(ripple(GREEN,15));shortBtn.setTextColor(Color.rgb(14,20,11));longBtn.setBackground(ripple(PANEL2,15));longBtn.setTextColor(TEXT);updateRiskPreview();});
@@ -430,7 +430,7 @@ public class MainActivity extends Activity {
         LinearLayout preview=card(); preview.addView(text("ПРЕДВАРИТЕЛЬНЫЙ РАСЧЁТ",10,GREEN,true)); gap(preview,8);
         riskPreview=text("Загружаем расчёт…",13,TEXT,false); preview.addView(riskPreview); gap(preview,8);
         preview.addView(text("Результат считается по следующим реальным OHLC-свечам. Комиссии, funding и точная ликвидация пока не моделируются — это учебный P&L, не расчёт для реальной сделки.",10,MUTED,false)); c.addView(preview); gap(c,16);
-        TextView confirm=button("Подтвердить и пройти историю  →",true); c.addView(confirm,lp(-1,54));
+        TextView confirm=button("Подтвердить и пройти историю",true); c.addView(confirm,lp(-1,54));
         confirm.setOnClickListener(v->{
             try {
                 double margin=parse(marginInput.getText().toString());
@@ -537,7 +537,7 @@ public class MainActivity extends Activity {
         String[][] lessons=lessonCatalog();
         for(int i=0;i<lessons.length;i++){
             LinearLayout l=card();l.addView(text(lessons[i][0],10,GREEN,true));gap(l,8);l.addView(text(lessons[i][1],17,TEXT,true));gap(l,4);l.addView(text(lessons[i][2],12,MUTED,false));gap(l,12);
-            final int idx=i;addButton(l,"Открыть урок →",true,v->showLessonDetail(idx));
+            final int idx=i;addButton(l,"Открыть урок",true,v->showLessonDetail(idx));
             LinearLayout.LayoutParams p=lp(-1,-2);p.bottomMargin=dp(10);c.addView(l,p);
         }
         addBottomNav(0);
