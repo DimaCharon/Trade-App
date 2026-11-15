@@ -116,7 +116,7 @@ public class MainActivity extends Activity {
         TextView v = new TextView(this);
         String shown=value;if(value!=null&&value.matches(".*[А-ЯЁ].*")&&value.equals(value.toUpperCase(new Locale("ru")))){String lower=value.toLowerCase(new Locale("ru"));shown=lower.substring(0,1).toUpperCase(new Locale("ru"))+lower.substring(1);}v.setText(shown); v.setTextSize(size); v.setTextColor(color);
         v.setGravity(Gravity.CENTER_VERTICAL);
-        v.setTypeface(Typeface.create("sans-serif", bold ? Typeface.MEDIUM : Typeface.NORMAL));
+        v.setTypeface(Typeface.create(bold ? "sans-serif-medium" : "sans-serif", Typeface.NORMAL));
         v.setIncludeFontPadding(false);
         return v;
     }
