@@ -222,12 +222,10 @@ public class MainActivity extends Activity {
         LinearLayout bottom = row(); bottom.addView(text("◷  Серия тренировок", 12, MUTED, false), new LinearLayout.LayoutParams(0, -2, 1));
         bottom.addView(text(trades + " сделок", 12, TEXT, true)); wallet.addView(bottom); c.addView(wallet);
         gap(c, 22);
-        LinearLayout lessonCard = card();
-        LinearLayout tag = row(); TextView badge = text("●  РЕАЛЬНАЯ ИСТОРИЯ", 10, GREEN, true); tag.addView(badge); lessonCard.addView(tag);
-        gap(lessonCard, 11); lessonCard.addView(text("Сегодняшний челлендж", 19, TEXT, true));
-        gap(lessonCard, 5); lessonCard.addView(text("Найди точку входа на настоящем графике BTC, выставь риск и проверь решение на следующих свечах.", 13, MUTED, false));
-        gap(lessonCard, 16); addButton(lessonCard, "Начать тренировку  →", true, v -> showPractice()); c.addView(lessonCard);
-        gap(c, 22);
+        LinearLayout quick=row();
+        LinearLayout practiceTile=card();practiceTile.addView(text("ПРАКТИКА",10,GREEN,true));gap(practiceTile,7);practiceTile.addView(text("Исторические сделки",15,TEXT,true));gap(practiceTile,4);practiceTile.addView(text("Работа с реальными свечами",11,MUTED,false));practiceTile.setOnClickListener(v->showPractice());quick.addView(practiceTile,new LinearLayout.LayoutParams(0,-2,1));
+        LinearLayout calendarTile=card();calendarTile.addView(text("КАЛЕНДАРЬ",10,GREEN,true));gap(calendarTile,7);calendarTile.addView(text("Мои сделки",15,TEXT,true));gap(calendarTile,4);calendarTile.addView(text("Автоматический P&L",11,MUTED,false));calendarTile.setOnClickListener(v->showCalendar());LinearLayout.LayoutParams calp=new LinearLayout.LayoutParams(0,-2,1);calp.leftMargin=dp(8);quick.addView(calendarTile,calp);c.addView(quick);
+        gap(c,22);
         LinearLayout section = row(); section.addView(text("ТВОЙ ПУТЬ", 11, MUTED, true), new LinearLayout.LayoutParams(0, -2, 1));
         TextView all = text("Все уроки  ↗", 12, GREEN, true); section.addView(all); all.setOnClickListener(v -> showLessons()); c.addView(section);
         gap(c, 12);
@@ -486,13 +484,71 @@ public class MainActivity extends Activity {
     private void showLessons() {
         page=5;beginPage("Карта обучения",true);ScrollView s=scroll(root);LinearLayout c=content(s);
         c.addView(text("От первых свечей до уверенного риск-менеджмента — шаг за шагом.",14,MUTED,false));gap(c,18);
-        String[][] lessons={{"01 · СВЕЧИ","Как устроена японская свеча","Открытие, закрытие, максимум и минимум."},{"02 · НАПРАВЛЕНИЕ","LONG против SHORT","Как прибыль и убыток зависят от направления."},{"03 · ПЛЕЧО","Маржа и размер позиции","Почему плечо увеличивает и прибыль, и риск."},{"04 · ЗАЩИТА","Stop Loss и Take Profit","План выхода до открытия позиции."},{"05 · ПРАКТИКА","Исторический рынок","Принимай решения по реальным свечам Bybit."}};
+        String[][] lessons=lessonCatalog();
         for(int i=0;i<lessons.length;i++){
             LinearLayout l=card();l.addView(text(lessons[i][0],10,GREEN,true));gap(l,7);l.addView(text(lessons[i][1],17,TEXT,true));gap(l,5);l.addView(text(lessons[i][2],12,MUTED,false));gap(l,11);
-            final int idx=i;addButton(l,i==4?"Перейти к практике →":"Изучить тему",i==4,v->{if(idx==4)showPractice();else toast("Короткий урок скоро появится в следующем обновлении.");});
+            final int idx=i;addButton(l,"Открыть урок →",true,v->showLessonDetail(idx));
             LinearLayout.LayoutParams p=lp(-1,-2);p.bottomMargin=dp(10);c.addView(l,p);
         }
         addBottomNav(0);
+    }
+
+
+    private void showWelcome(){
+        page=6;beginPage("Добро пожаловать",false);ScrollView sv=scroll(root);LinearLayout c=content(sv);
+        gap(c,24);TextView logo=text("TQ",32,BG,true);logo.setGravity(Gravity.CENTER);logo.setBackground(shape(GREEN,20,GREEN,0));c.addView(logo,lp(76,76));gap(c,20);
+        c.addView(text("Начни свой путь в трейдинге.",27,TEXT,true));gap(c,8);
+        c.addView(text("Создай профиль, чтобы сохранять прогресс и историю сделок на этом устройстве.",14,MUTED,false));gap(c,20);
+        LinearLayout box=card();box.addView(text("ИМЯ ИЛИ НИКНЕЙМ",10,GREEN,true));gap(box,8);EditText name=input("");name.setHint("Как к тебе обращаться?");box.addView(name,lp(-1,50));gap(box,12);
+        box.addView(text("ПОЧТА · НЕОБЯЗАТЕЛЬНО",10,MUTED,true));gap(box,6);EditText email=input("");email.setHint("name@example.com");email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);box.addView(email,lp(-1,50));c.addView(box);gap(c,16);
+        addButton(c,"Продолжить →",true,v->{String n=name.getText().toString().trim();if(n.length()<2){toast("Введи имя или никнейм (минимум 2 символа)");return;}prefs.edit().putString("profile_name",n).putString("profile_email",email.getText().toString().trim()).apply();showHome();});
+        c.addView(text("Это локальный профиль без облачной регистрации. Данные хранятся на устройстве.",11,MUTED,false));
+    }
+
+    private String[][] lessonCatalog(){return new String[][]{
+      {"01 · БАЗА","Японские свечи","Свеча содержит Open, High, Low и Close. Тело показывает разницу между открытием и закрытием, тени — крайние цены периода. Зелёная свеча закрылась выше открытия, красная — ниже. Одна свеча не предсказывает будущее: оценивай последовательность и контекст."},
+      {"02 · СТРУКТУРА","Тренд и боковик","Восходящий тренд формирует более высокие максимумы и минимумы, нисходящий — более низкие. Боковик движется в диапазоне. Не путай единичный импульс с трендом: ищи подтверждение структурой и заранее отмечай уровень отмены сценария."},
+      {"03 · НАПРАВЛЕНИЕ","LONG и SHORT","LONG зарабатывает при росте цены, SHORT — при снижении. Перед входом сформулируй сценарий, точку отмены и план выхода. Само направление не даёт преимущества: важны качество входа, риск и дисциплина."},
+      {"04 · УРОВНИ","Поддержка и сопротивление","Поддержка — область, где раньше активизировались покупатели; сопротивление — область продавцов. Это зоны, а не точные линии. Учитывай число реакций, силу движения и возможный ретест после пробоя."},
+      {"05 · ИНДИКАТОРЫ","Moving Average и RSI","Скользящая средняя сглаживает цену, RSI оценивает импульс. Перекупленность не гарантирует разворот, пересечение средних запаздывает. Используй индикаторы как подтверждение, а не как самостоятельную причину сделки."},
+      {"06 · ОБЪЁМ","Объём и ликвидность","Объём показывает активность торгов. Ликвидность — возможность исполнить ордер без сильного влияния на цену. На тонком рынке спред и проскальзывание ухудшают результат. Рост объёма не гарантирует продолжение движения."},
+      {"07 · РИСК","Риск-менеджмент","Сначала выбери допустимый денежный убыток, затем расстояние до Stop Loss и только после этого размер позиции. Не увеличивай риск ради отыгрыша. Серии убытков возможны при любой стратегии."},
+      {"08 · ПЛЕЧО","Маржа и ликвидация","Плечо увеличивает номинал позиции относительно маржи, а значит усиливает прибыль и убыток. Ликвидация зависит от maintenance margin, mark price и правил биржи. Тренажёр пока не моделирует точную ликвидацию."},
+      {"09 · ВЫХОД","Take Profit и Stop Loss","TP фиксирует цель, SL ограничивает сценарий. Уровни должны учитывать структуру и допустимый риск. Не отодвигай стоп из-за эмоций. Если TP и SL задеты в одной OHLC-свече, порядок событий неизвестен."},
+      {"10 · ПСИХОЛОГИЯ","Дисциплина трейдера","До сделки запиши причину входа, условие отмены и риск. Не мсти рынку и не пытайся отыграться. Пропущенная сделка — не убыток. Оценивай соблюдение плана отдельно от финансового результата."},
+      {"11 · АНАЛИТИКА","Журнал и статистика","Отслеживай не только win rate, но и среднюю прибыль, средний убыток, просадку и количество сделок. Маленькая выборка не доказывает устойчивость стратегии. Сравнивай результаты по одинаковым правилам."},
+      {"12 · ПРАКТИКА","Исторический тренажёр","Выбери инструмент и таймфрейм. Сначала показываются только свечи до точки решения. Вход моделируется по открытию следующей свечи, затем раскрывается история. Комиссии и funding пока не включены."}
+    };}
+
+    private void showLessonDetail(int index){
+        String[][] data=lessonCatalog();if(index<0||index>=data.length)return;page=7;beginPage("Урок "+(index+1)+" / "+data.length,true);
+        ScrollView sv=scroll(root);LinearLayout c=content(sv);LinearLayout hero=card();hero.addView(text(data[index][0],10,GREEN,true));gap(hero,10);hero.addView(text(data[index][1],24,TEXT,true));gap(hero,14);hero.addView(text(data[index][2],15,MUTED,false));c.addView(hero);gap(c,14);
+        LinearLayout note=card();note.addView(text("ПРАКТИЧЕСКИЙ ВЫВОД",10,GREEN,true));gap(note,7);note.addView(text("Перед каждой сделкой определи сценарий, точку отмены и максимальный допустимый убыток. Не принимай решение только по одному индикатору.",13,TEXT,false));c.addView(note);gap(c,14);
+        boolean done=prefs.getBoolean("lesson_done_"+index,false);addButton(c,done?"Урок пройден ✓":"Отметить урок пройденным · +25 XP",true,v->{if(!prefs.getBoolean("lesson_done_"+index,false)){xp+=25;prefs.edit().putBoolean("lesson_done_"+index,true).apply();persist();}showLessonDetail(index);});
+        if(index<data.length-1)addButton(c,"Следующий урок →",false,v->showLessonDetail(index+1));else addButton(c,"Перейти к практике →",false,v->showPractice());addBottomNav(0);
+    }
+
+    private void showCalendar(){
+        page=8;beginPage("Календарь сделок",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);
+        Calendar cal=Calendar.getInstance();cal.add(Calendar.MONTH,calendarMonthOffset);int year=cal.get(Calendar.YEAR),month=cal.get(Calendar.MONTH);
+        LinearLayout nav=row();TextView prev=text("‹",28,TEXT,true);prev.setGravity(Gravity.CENTER);nav.addView(prev,lp(40,42));TextView title=text(new SimpleDateFormat("LLLL yyyy",new Locale("ru")).format(cal.getTime()),18,TEXT,true);title.setGravity(Gravity.CENTER);nav.addView(title,new LinearLayout.LayoutParams(0,dp(42),1));TextView next=text("›",28,TEXT,true);next.setGravity(Gravity.CENTER);nav.addView(next,lp(40,42));c.addView(nav);prev.setOnClickListener(v->{calendarMonthOffset--;showCalendar();});next.setOnClickListener(v->{calendarMonthOffset++;showCalendar();});
+        double total=0;int cnt=0,w=0,l=0;for(JSONObject t:tradeHistory){Calendar d=Calendar.getInstance();d.setTimeInMillis(t.optLong("time"));if(d.get(Calendar.YEAR)==year&&d.get(Calendar.MONTH)==month){double p=t.optDouble("pnl");total+=p;cnt++;if(p>0)w++;else if(p<0)l++;}}
+        LinearLayout sum=card();sum.addView(text("МЕСЯЧНЫЙ P&L",10,MUTED,true));gap(sum,6);sum.addView(text((total>=0?"+":"")+moneyFmt.format(total)+" USDT",26,total>=0?GREEN:RED,true));gap(sum,4);sum.addView(text(cnt+" сделок · "+w+" прибыльных · "+l+" убыточных",12,MUTED,false));c.addView(sum);gap(c,12);
+        LinearLayout weekdays=row();for(String x:new String[]{"Пн","Вт","Ср","Чт","Пт","Сб","Вс"}){TextView v=text(x,10,MUTED,true);v.setGravity(Gravity.CENTER);weekdays.addView(v,new LinearLayout.LayoutParams(0,dp(28),1));}c.addView(weekdays);
+        Calendar first=new GregorianCalendar(year,month,1);int days=first.getActualMaximum(Calendar.DAY_OF_MONTH),offset=(first.get(Calendar.DAY_OF_WEEK)+5)%7,rows=(offset+days+6)/7;
+        for(int r=0;r<rows;r++){LinearLayout line=row();for(int col=0;col<7;col++){int day=r*7+col-offset;LinearLayout cell=column();cell.setGravity(Gravity.TOP|Gravity.CENTER_HORIZONTAL);cell.setBackground(shape(PANEL,9,BORDER,1));pad(cell,2,5,2,3);if(day>=1&&day<=days){cell.addView(text(String.valueOf(day),11,TEXT,true));double pnl=0;int n=0;for(JSONObject t:tradeHistory){Calendar d=Calendar.getInstance();d.setTimeInMillis(t.optLong("time"));if(d.get(Calendar.YEAR)==year&&d.get(Calendar.MONTH)==month&&d.get(Calendar.DAY_OF_MONTH)==day){pnl+=t.optDouble("pnl");n++;}}if(n>0){gap(cell,3);TextView v=text((pnl>=0?"+":"")+new DecimalFormat("0.#").format(pnl),8,pnl>=0?GREEN:RED,true);v.setGravity(Gravity.CENTER);cell.addView(v);TextView q=text(n+" сд.",8,MUTED,false);q.setGravity(Gravity.CENTER);cell.addView(q);cell.setBackground(shape(pnl>=0?Color.rgb(20,43,30):Color.rgb(47,27,31),9,BORDER,1));}}line.addView(cell,new LinearLayout.LayoutParams(0,dp(64),1));}LinearLayout.LayoutParams rp=lp(-1,64);rp.bottomMargin=dp(4);c.addView(line,rp);}
+        gap(c,14);c.addView(text("СДЕЛКИ ЗА МЕСЯЦ",10,MUTED,true));gap(c,8);boolean any=false;
+        for(int i=tradeHistory.size()-1;i>=0;i--){JSONObject t=tradeHistory.get(i);Calendar d=Calendar.getInstance();d.setTimeInMillis(t.optLong("time"));if(d.get(Calendar.YEAR)==year&&d.get(Calendar.MONTH)==month){any=true;LinearLayout item=card();LinearLayout row=row();row.addView(text(t.optString("symbol")+" · "+t.optString("side"),13,TEXT,true),new LinearLayout.LayoutParams(0,-2,1));double p=t.optDouble("pnl");row.addView(text((p>=0?"+":"")+moneyFmt.format(p)+" USDT",13,p>=0?GREEN:RED,true));item.addView(row);gap(item,5);item.addView(text(new SimpleDateFormat("dd MMM · HH:mm",new Locale("ru")).format(new Date(t.optLong("time")))+" · "+t.optString("reason"),10,MUTED,false));LinearLayout.LayoutParams ip=lp(-1,-2);ip.bottomMargin=dp(7);c.addView(item,ip);}}
+        if(!any)c.addView(text("Сделок за этот месяц пока нет. После каждой завершённой тренировки запись появится здесь автоматически.",12,MUTED,false));addBottomNav(2);
+    }
+
+    private void showProfile(){
+        page=9;beginPage("Личный кабинет",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);String name=prefs.getString("profile_name","Трейдер");
+        LinearLayout hero=card();TextView avatar=text(name.substring(0,1).toUpperCase(Locale.getDefault()),28,BG,true);avatar.setGravity(Gravity.CENTER);avatar.setBackground(shape(GREEN,28,GREEN,0));hero.addView(avatar,lp(58,58));gap(hero,10);hero.addView(text(name,23,TEXT,true));gap(hero,4);hero.addView(text(prefs.getString("profile_email","Локальный профиль"),12,MUTED,false));gap(hero,10);hero.addView(text("Уровень "+(xp/500+1)+" · "+xp+" XP",13,GREEN,true));c.addView(hero);gap(c,14);
+        LinearLayout metrics=row();addMetric(metrics,"СДЕЛОК",String.valueOf(trades));addMetric(metrics,"WIN RATE",trades==0?"—":priceFmt.format((double)wins/trades*100)+"%");c.addView(metrics);gap(c,12);
+        addButton(c,"Календарь сделок",false,v->showCalendar());addButton(c,"Мой прогресс",false,v->showStats());addButton(c,"Карта обучения",false,v->showLessons());
+        addButton(c,"Изменить имя",false,v->{EditText e=input(name);new android.app.AlertDialog.Builder(this).setTitle("Имя профиля").setView(e).setNegativeButton("Отмена",null).setPositiveButton("Сохранить",(d,w)->{String n=e.getText().toString().trim();if(n.length()>1){prefs.edit().putString("profile_name",n).apply();showProfile();}}).show();});
+        addButton(c,"Выйти из профиля",false,v->new android.app.AlertDialog.Builder(this).setTitle("Выйти?").setMessage("Локальная история и прогресс сохранятся на устройстве.").setNegativeButton("Отмена",null).setPositiveButton("Выйти",(d,w)->{prefs.edit().remove("profile_name").remove("profile_email").apply();showWelcome();}).show());addBottomNav(2);
     }
 
     private void persist() {
