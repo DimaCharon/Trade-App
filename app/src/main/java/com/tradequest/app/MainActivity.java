@@ -114,9 +114,9 @@ public class MainActivity extends Activity {
 
     private TextView text(String value, float size, int color, boolean bold) {
         TextView v = new TextView(this);
-        v.setText(value); v.setTextSize(size); v.setTextColor(color);
+        String shown=value;if(value!=null&&value.matches(".*[А-ЯЁ].*")&&value.equals(value.toUpperCase(new Locale("ru")))){String lower=value.toLowerCase(new Locale("ru"));shown=lower.substring(0,1).toUpperCase(new Locale("ru"))+lower.substring(1);}v.setText(shown); v.setTextSize(size); v.setTextColor(color);
         v.setGravity(Gravity.CENTER_VERTICAL);
-        v.setTypeface(Typeface.create("sans-serif", bold ? Typeface.BOLD : Typeface.NORMAL));
+        v.setTypeface(Typeface.create("sans-serif", bold ? Typeface.MEDIUM : Typeface.NORMAL));
         v.setIncludeFontPadding(false);
         return v;
     }
@@ -250,7 +250,7 @@ public class MainActivity extends Activity {
         page = 1; beginPage("Историческая практика", true);
         ScrollView s = scroll(root); LinearLayout c = content(s);
         LinearLayout pairCard = card();
-        pairCard.addView(text("ВЫБЕРИ РЫНОК", 10, MUTED, true)); gap(pairCard, 8);
+        pairCard.addView(text("Выбери рынок", 10, MUTED, true)); gap(pairCard, 8);
         LinearLayout selectors = row();
         Spinner pairSpinner = spinner(PAIR_LABELS);
         Spinner tfSpinner = spinner(new String[]{"1 мин", "5 мин", "15 мин", "1 час", "4 часа", "1 день"});
@@ -273,8 +273,8 @@ public class MainActivity extends Activity {
         modeCard.addView(text(binaryMode?"Выбери направление и срок экспирации. Итог зависит от цены закрытия исторической свечи.":"LONG/SHORT с виртуальной маржой, плечом, TP и SL.",11,MUTED,false));
         classic.setOnClickListener(v->{if(binaryMode){binaryMode=false;showPractice();}});binary.setOnClickListener(v->{if(!binaryMode){binaryMode=true;showPractice();}});c.addView(modeCard);gap(c,12);
         LinearLayout chartCard = card();
-        LinearLayout chartTop = row(); chartTop.addView(text("ГРАФИК", 10, MUTED, true),new LinearLayout.LayoutParams(0,-2,1));
-        chartTop.addView(text("BYBIT · LINEAR", 10, GREEN, true)); chartCard.addView(chartTop); gap(chartCard, 12);
+        LinearLayout chartTop = row(); chartTop.addView(text("График", 10, MUTED, true),new LinearLayout.LayoutParams(0,-2,1));
+        chartTop.addView(text("Bybit · Linear", 10, GREEN, true)); chartCard.addView(chartTop); gap(chartCard, 12);
         practiceChart = new CandlestickChartView(this); practiceChart.setEmptyLabel("Загружаем историю рынка"); chartCard.addView(practiceChart,lp(-1,230)); gap(chartCard, 8);
         chartCard.addView(text("Будущие свечи скрыты. Решение принимается только по данным, доступным на тот момент.", 11, MUTED, false));
         c.addView(chartCard); gap(c, 16);
@@ -551,7 +551,7 @@ public class MainActivity extends Activity {
         c.addView(text("Создай профиль, чтобы сохранять прогресс и историю сделок на этом устройстве.",14,MUTED,false));gap(c,20);
         LinearLayout box=card();box.addView(text("ИМЯ ИЛИ НИКНЕЙМ",10,GREEN,true));gap(box,8);EditText name=textInput("");name.setHint("Как к тебе обращаться?");box.addView(name,lp(-1,50));gap(box,12);
         box.addView(text("ПОЧТА · НЕОБЯЗАТЕЛЬНО",10,MUTED,true));gap(box,8);EditText email=textInput("");email.setHint("name@example.com");email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);box.addView(email,lp(-1,50));c.addView(box);gap(c,16);
-        addButton(c,"Продолжить →",true,v->{String n=name.getText().toString().trim();if(n.length()<2){toast("Введи имя или никнейм (минимум 2 символа)");return;}prefs.edit().putString("profile_name",n).putString("profile_email",email.getText().toString().trim()).apply();showHome();});
+        addButton(c,"Продолжить",true,v->{String n=name.getText().toString().trim();if(n.length()<2){toast("Введи имя или никнейм (минимум 2 символа)");return;}prefs.edit().putString("profile_name",n).putString("profile_email",email.getText().toString().trim()).apply();showHome();});
         c.addView(text("Это локальный профиль без облачной регистрации. Данные хранятся на устройстве.",11,MUTED,false));
     }
 
@@ -575,7 +575,7 @@ public class MainActivity extends Activity {
         ScrollView sv=scroll(root);LinearLayout c=content(sv);LinearLayout hero=card();hero.addView(text(data[index][0],10,GREEN,true));gap(hero,8);hero.addView(text(data[index][1],24,TEXT,true));gap(hero,12);hero.addView(text(data[index][2],15,MUTED,false));c.addView(hero);gap(c,12);
         LinearLayout note=card();note.addView(text("ПРАКТИЧЕСКИЙ ВЫВОД",10,GREEN,true));gap(note,8);note.addView(text("Перед каждой сделкой определи сценарий, точку отмены и максимальный допустимый убыток. Не принимай решение только по одному индикатору.",13,TEXT,false));c.addView(note);gap(c,12);
         boolean done=prefs.getBoolean("lesson_done_"+index,false);addButton(c,done?"Урок пройден ✓":"Отметить урок пройденным · +25 XP",true,v->{if(!prefs.getBoolean("lesson_done_"+index,false)){xp+=25;prefs.edit().putBoolean("lesson_done_"+index,true).apply();persist();}showLessonDetail(index);});
-        if(index<data.length-1)addButton(c,"Следующий урок →",false,v->showLessonDetail(index+1));else addButton(c,"Перейти к практике →",false,v->showPractice());addBottomNav(0);
+        if(index<data.length-1)addButton(c,"Следующий урок",false,v->showLessonDetail(index+1));else addButton(c,"Перейти к практике",false,v->showPractice());addBottomNav(0);
     }
 
     private void showCalendar(){
@@ -583,12 +583,12 @@ public class MainActivity extends Activity {
         Calendar cal=Calendar.getInstance();cal.add(Calendar.MONTH,calendarMonthOffset);int year=cal.get(Calendar.YEAR),month=cal.get(Calendar.MONTH);
         LinearLayout nav=row();TextView prev=text("‹",28,TEXT,true);prev.setGravity(Gravity.CENTER);nav.addView(prev,lp(40,42));TextView title=text(new SimpleDateFormat("LLLL yyyy",new Locale("ru")).format(cal.getTime()),18,TEXT,true);title.setGravity(Gravity.CENTER);nav.addView(title,new LinearLayout.LayoutParams(0,dp(42),1));TextView next=text("›",28,TEXT,true);next.setGravity(Gravity.CENTER);nav.addView(next,lp(40,42));c.addView(nav);prev.setOnClickListener(v->{calendarMonthOffset--;showCalendar();});next.setOnClickListener(v->{calendarMonthOffset++;showCalendar();});
         double total=0;int cnt=0,w=0,l=0;for(JSONObject t:tradeHistory){Calendar d=Calendar.getInstance();d.setTimeInMillis(t.optLong("time"));if(d.get(Calendar.YEAR)==year&&d.get(Calendar.MONTH)==month){double p=t.optDouble("pnl");total+=p;cnt++;if(p>0)w++;else if(p<0)l++;}}
-        LinearLayout sum=card();sum.addView(text("МЕСЯЧНЫЙ P&L",10,MUTED,true));gap(sum,8);sum.addView(text((total>=0?"+":"")+moneyFmt.format(total)+" USDT",26,total>=0?GREEN:RED,true));gap(sum,4);sum.addView(text(cnt+" сделок · "+w+" прибыльных · "+l+" убыточных",12,MUTED,false));c.addView(sum);gap(c,12);
+        LinearLayout sum=card();sum.addView(text("МЕСЯЧНЫЙ P&L",10,MUTED,true));gap(sum,8);sum.addView(text(moneyFmt.format(total)+" USDT",26,total>=0?GREEN:RED,true));gap(sum,4);sum.addView(text(cnt+" сделок · "+w+" прибыльных · "+l+" убыточных",12,MUTED,false));c.addView(sum);gap(c,12);
         LinearLayout weekdays=row();for(String x:new String[]{"Пн","Вт","Ср","Чт","Пт","Сб","Вс"}){TextView v=text(x,10,MUTED,true);v.setGravity(Gravity.CENTER);weekdays.addView(v,new LinearLayout.LayoutParams(0,dp(28),1));}c.addView(weekdays);
         Calendar first=new GregorianCalendar(year,month,1);int days=first.getActualMaximum(Calendar.DAY_OF_MONTH),offset=(first.get(Calendar.DAY_OF_WEEK)+5)%7,rows=(offset+days+6)/7;
         for(int r=0;r<rows;r++){LinearLayout line=row();for(int col=0;col<7;col++){int day=r*7+col-offset;LinearLayout cell=column();cell.setGravity(Gravity.TOP|Gravity.CENTER_HORIZONTAL);cell.setBackground(shape(PANEL,9,BORDER,1));pad(cell,2,5,2,3);if(day>=1&&day<=days){cell.addView(text(String.valueOf(day),11,TEXT,true));double pnl=0;int n=0;for(JSONObject t:tradeHistory){Calendar d=Calendar.getInstance();d.setTimeInMillis(t.optLong("time"));if(d.get(Calendar.YEAR)==year&&d.get(Calendar.MONTH)==month&&d.get(Calendar.DAY_OF_MONTH)==day){pnl+=t.optDouble("pnl");n++;}}if(n>0){gap(cell,4);TextView v=text((pnl>=0?"+":"")+new DecimalFormat("0.#").format(pnl),8,pnl>=0?GREEN:RED,true);v.setGravity(Gravity.CENTER);cell.addView(v);TextView q=text(n+" сд.",8,MUTED,false);q.setGravity(Gravity.CENTER);cell.addView(q);cell.setBackground(shape(pnl>=0?Color.rgb(20,43,30):Color.rgb(47,27,31),9,BORDER,1));}}line.addView(cell,new LinearLayout.LayoutParams(0,dp(64),1));}LinearLayout.LayoutParams rp=lp(-1,64);rp.bottomMargin=dp(4);c.addView(line,rp);}
         gap(c,12);c.addView(text("СДЕЛКИ ЗА МЕСЯЦ",10,MUTED,true));gap(c,8);boolean any=false;
-        for(int i=tradeHistory.size()-1;i>=0;i--){JSONObject t=tradeHistory.get(i);Calendar d=Calendar.getInstance();d.setTimeInMillis(t.optLong("time"));if(d.get(Calendar.YEAR)==year&&d.get(Calendar.MONTH)==month){any=true;LinearLayout item=card();LinearLayout row=row();row.addView(text(t.optString("symbol")+" · "+t.optString("side"),13,TEXT,true),new LinearLayout.LayoutParams(0,-2,1));double p=t.optDouble("pnl");row.addView(text((p>=0?"+":"")+moneyFmt.format(p)+" USDT",13,p>=0?GREEN:RED,true));item.addView(row);gap(item,4);item.addView(text(new SimpleDateFormat("dd MMM · HH:mm",new Locale("ru")).format(new Date(t.optLong("time")))+" · "+t.optString("reason"),10,MUTED,false));LinearLayout.LayoutParams ip=lp(-1,-2);ip.bottomMargin=dp(7);c.addView(item,ip);}}
+        for(int i=tradeHistory.size()-1;i>=0;i--){JSONObject t=tradeHistory.get(i);Calendar d=Calendar.getInstance();d.setTimeInMillis(t.optLong("time"));if(d.get(Calendar.YEAR)==year&&d.get(Calendar.MONTH)==month){any=true;LinearLayout item=card();LinearLayout row=row();row.addView(text(t.optString("symbol")+" · "+t.optString("side"),13,TEXT,true),new LinearLayout.LayoutParams(0,-2,1));double p=t.optDouble("pnl");row.addView(text(moneyFmt.format(p)+" USDT",13,p>=0?GREEN:RED,true));item.addView(row);gap(item,4);item.addView(text(new SimpleDateFormat("dd MMM · HH:mm",new Locale("ru")).format(new Date(t.optLong("time")))+" · "+t.optString("reason"),10,MUTED,false));LinearLayout.LayoutParams ip=lp(-1,-2);ip.bottomMargin=dp(7);c.addView(item,ip);}}
         if(!any)c.addView(text("Сделок за этот месяц пока нет. После каждой завершённой тренировки запись появится здесь автоматически.",12,MUTED,false));addBottomNav(2);
     }
 
