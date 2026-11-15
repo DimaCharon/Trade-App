@@ -67,6 +67,9 @@ public class MainActivity extends Activity {
     private int pivot = -1;
     private TradeSimulator.Result tradeResult;
     private boolean isLong = true;
+    private boolean binaryMode = false;
+    private TradeSimulator.BinaryResult binaryResult;
+    private static final double BINARY_PAYOUT = 0.80;
     private double balance = 10000.0;
     private int xp = 0, trades = 0, wins = 0;
     private double netPnl = 0;
@@ -170,7 +173,6 @@ public class MainActivity extends Activity {
         TextView titleView = text(title, 19, TEXT, true);
         LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(0, dp(42), 1); titleLp.leftMargin = dp(10);
         header.addView(titleView, titleLp);
-        TextView status = text("●", 13, GREEN, true); status.setGravity(Gravity.CENTER); header.addView(status, lp(26, 38));
         root.addView(header);
         root.animate().alpha(1f).setDuration(220).start();
     }
@@ -193,13 +195,12 @@ public class MainActivity extends Activity {
         for (int i=0; i<labels.length; i++) {
             final int target = pages[i];
             LinearLayout item = column(); item.setGravity(Gravity.CENTER);
-            TextView icon = text(i==0?"⌂":(i==1?"⌁":"▥"), 20, selected==i?GREEN:MUTED, true); icon.setGravity(Gravity.CENTER);
-            TextView label = text(labels[i], 10, selected==i?GREEN:MUTED, selected==i); label.setGravity(Gravity.CENTER);
-            item.addView(icon); gap(item, 3); item.addView(label);
-            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, dp(46), 1); nav.addView(item, p);
+            TextView label = text(labels[i], 12, selected==i?TEXT:MUTED, selected==i); label.setGravity(Gravity.CENTER);
+            item.setBackground(selected==i?shape(PANEL2,10,BORDER,1):shape(Color.TRANSPARENT,10,Color.TRANSPARENT,0));item.addView(label);
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, dp(40), 1); nav.addView(item, p);
             item.setOnClickListener(v -> { if(target==0)showHome();else if(target==1)showPractice();else if(target==8)showCalendar();else showProfile(); });
         }
-        root.addView(nav, lp(-1, 62));
+        root.addView(nav, lp(-1, 56));
     }
 
     private void showHome() {
@@ -265,7 +266,12 @@ public class MainActivity extends Activity {
         gap(pairCard, 12);
         practiceStatus = text("Выбери пару и загрузи исторические свечи Bybit.", 12, MUTED, false); pairCard.addView(practiceStatus);
         gap(pairCard, 12); addButton(pairCard, loading?"Загрузка…":"Загрузить случайный момент", false, v -> loadScenario());
-        c.addView(pairCard); gap(c, 15);
+        c.addView(pairCard); gap(c, 12);
+        LinearLayout modeCard=card();modeCard.addView(text("Тип практики",12,TEXT,true));gap(modeCard,8);
+        LinearLayout modeRow=row();TextView classic=button("Обычная сделка",!binaryMode),binary=button("Бинарная",binaryMode);
+        modeRow.addView(classic,new LinearLayout.LayoutParams(0,dp(44),1));View modeGap=new View(this);modeRow.addView(modeGap,lp(8,1));modeRow.addView(binary,new LinearLayout.LayoutParams(0,dp(44),1));modeCard.addView(modeRow);
+        modeCard.addView(text(binaryMode?"Выбери направление и срок экспирации. Итог зависит от цены закрытия исторической свечи.":"LONG/SHORT с виртуальной маржой, плечом, TP и SL.",11,MUTED,false));
+        classic.setOnClickListener(v->{if(binaryMode){binaryMode=false;showPractice();}});binary.setOnClickListener(v->{if(!binaryMode){binaryMode=true;showPractice();}});c.addView(modeCard);gap(c,12);
         LinearLayout chartCard = card();
         LinearLayout chartTop = row(); chartTop.addView(text("ГРАФИК", 10, MUTED, true),new LinearLayout.LayoutParams(0,-2,1));
         chartTop.addView(text("BYBIT · LINEAR", 10, GREEN, true)); chartCard.addView(chartTop); gap(chartCard, 12);
@@ -275,7 +281,7 @@ public class MainActivity extends Activity {
         LinearLayout info = card(); info.addView(text("КАК ЭТО РАБОТАЕТ", 10, GREEN, true)); gap(info, 8);
         info.addView(text("Выбранная свеча уже закрыта. Вход в симуляции будет по открытию следующей свечи — так приложение не использует будущее для расчёта цены входа.", 12, MUTED, false)); c.addView(info);
         gap(c, 14);
-        addButton(c, "Настроить сделку  →", true, v -> { if (pivot < 0 || candles.isEmpty()) toast("Сначала загрузи исторический момент"); else showSetup(); });
+        addButton(c, binaryMode?"Выбрать направление и экспирацию":"Настроить сделку", true, v -> { if (pivot < 0 || candles.isEmpty()) toast("Сначала загрузи исторический момент"); else if(binaryMode)showBinarySetup();else showSetup(); });
         addBottomNav(1);
         if (candles.isEmpty() && !loading) loadScenario();
         else if (pivot >= 0) updatePracticeChart();
@@ -355,6 +361,7 @@ public class MainActivity extends Activity {
     }
 
     private void showSetup() {
+        if(binaryMode){showBinarySetup();return;}
         page=2; beginPage("Настройка сделки", true);
         ScrollView s=scroll(root); LinearLayout c=content(s);
         LinearLayout symbolCard=card();
@@ -409,6 +416,8 @@ public class MainActivity extends Activity {
         e.setBackground(shape(PANEL2,13,BORDER,1)); pad(e,13,0,13,0); return e;
     }
 
+    private EditText textInput(String value){EditText e=new EditText(this);e.setSingleLine(true);e.setText(value);e.setTextSize(15);e.setTextColor(TEXT);e.setHintTextColor(MUTED);e.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS);e.setBackground(shape(PANEL2,10,BORDER,1));pad(e,12,0,12,0);return e;}
+
     private double parse(String value) { return Double.parseDouble(value.trim().replace(',','.')); }
     private int leverageValue() { if(leverageSpinner==null)return 5; String s=(String)leverageSpinner.getSelectedItem(); return Integer.parseInt(s.replace("×","")); }
     private void updateRiskPreview() {
@@ -434,7 +443,7 @@ public class MainActivity extends Activity {
         boolean win=tradeResult.pnl>0;
         LinearLayout result=card(); result.setBackground(shape(win?Color.rgb(20,31,24):Color.rgb(34,23,26),22,win?Color.rgb(62,100,49):Color.rgb(112,55,61),1));
         result.addView(text(tradeResult.reason,11,win?GREEN:RED,true)); gap(result,7);
-        result.addView(text((tradeResult.pnl>=0?"+":"")+moneyFmt.format(tradeResult.pnl)+" USDT",32,TEXT,true)); gap(result,5);
+        result.addView(text(moneyFmt.format(tradeResult.pnl)+" USDT",32,TEXT,true)); gap(result,5);
         result.addView(text(""+(tradeResult.roi>=0?"+":"")+priceFmt.format(tradeResult.roi)+"% к марже  ·  "+(isLong?"LONG":"SHORT"),12,MUTED,false)); c.addView(result); gap(c,14);
         LinearLayout chart=card(); LinearLayout top=row();top.addView(text(symbol+"  ·  "+intervalLabel(interval),13,TEXT,true),new LinearLayout.LayoutParams(0,-2,1));top.addView(text("ИСТОРИЯ РАСКРЫТА",9,GREEN,true));chart.addView(top);gap(chart,12);
         resultChart=new CandlestickChartView(this);
@@ -547,8 +556,8 @@ public class MainActivity extends Activity {
         LinearLayout hero=card();TextView avatar=text(name.substring(0,1).toUpperCase(Locale.getDefault()),28,BG,true);avatar.setGravity(Gravity.CENTER);avatar.setBackground(shape(GREEN,28,GREEN,0));hero.addView(avatar,lp(58,58));gap(hero,10);hero.addView(text(name,23,TEXT,true));gap(hero,4);hero.addView(text(prefs.getString("profile_email","Локальный профиль"),12,MUTED,false));gap(hero,10);hero.addView(text("Уровень "+(xp/500+1)+" · "+xp+" XP",13,GREEN,true));c.addView(hero);gap(c,14);
         LinearLayout metrics=row();addMetric(metrics,"СДЕЛОК",String.valueOf(trades));addMetric(metrics,"WIN RATE",trades==0?"—":priceFmt.format((double)wins/trades*100)+"%");c.addView(metrics);gap(c,12);
         addButton(c,"Календарь сделок",false,v->showCalendar());addButton(c,"Мой прогресс",false,v->showStats());addButton(c,"Карта обучения",false,v->showLessons());
-        addButton(c,"Изменить имя",false,v->{EditText e=input(name);new android.app.AlertDialog.Builder(this).setTitle("Имя профиля").setView(e).setNegativeButton("Отмена",null).setPositiveButton("Сохранить",(d,w)->{String n=e.getText().toString().trim();if(n.length()>1){prefs.edit().putString("profile_name",n).apply();showProfile();}}).show();});
-        addButton(c,"Выйти из профиля",false,v->new android.app.AlertDialog.Builder(this).setTitle("Выйти?").setMessage("Локальная история и прогресс сохранятся на устройстве.").setNegativeButton("Отмена",null).setPositiveButton("Выйти",(d,w)->{prefs.edit().remove("profile_name").remove("profile_email").apply();showWelcome();}).show());addBottomNav(2);
+        addButton(c,"Изменить имя",false,v->{EditText e=textInput(name);new android.app.AlertDialog.Builder(this).setTitle("Имя профиля").setView(e).setNegativeButton("Отмена",null).setPositiveButton("Сохранить",(d,w)->{String n=e.getText().toString().trim();if(n.length()>1){prefs.edit().putString("profile_name",n).apply();showProfile();}}).show();});
+        addButton(c,"Выйти из профиля",false,v->new android.app.AlertDialog.Builder(this).setTitle("Выйти?").setMessage("Локальная история и прогресс сохранятся на устройстве.").setNegativeButton("Отмена",null).setPositiveButton("Выйти",(d,w)->{prefs.edit().remove("profile_name").remove("profile_email").apply();showWelcome();}).show());addBottomNav(3);
     }
 
     private void persist() {
