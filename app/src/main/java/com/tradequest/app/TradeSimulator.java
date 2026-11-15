@@ -17,6 +17,30 @@ final class TradeSimulator {
         }
     }
 
+    static final class BinaryResult {
+        final boolean won, draw;
+        final double entry, exit, stake, pnl, payoutRate;
+        final int expiryBars, exitIndex;
+        BinaryResult(boolean won, boolean draw, double entry, double exit, double stake,
+                     double pnl, double payoutRate, int expiryBars, int exitIndex) {
+            this.won=won;this.draw=draw;this.entry=entry;this.exit=exit;this.stake=stake;
+            this.pnl=pnl;this.payoutRate=payoutRate;this.expiryBars=expiryBars;this.exitIndex=exitIndex;
+        }
+    }
+
+    static BinaryResult simulateBinary(List<MarketData.Candle> candles,int pivot,boolean up,
+                                       double stake,int expiryBars,double payoutRate) {
+        if(pivot<0||pivot+expiryBars>=candles.size())throw new IllegalArgumentException("Недостаточно будущих свечей для экспирации");
+        if(stake<=0||expiryBars<1||payoutRate<0||payoutRate>1)throw new IllegalArgumentException("Проверь сумму и срок экспирации");
+        double entry=candles.get(pivot+1).open;
+        int exitIndex=pivot+expiryBars;
+        double exit=candles.get(exitIndex).close;
+        boolean draw=Math.abs(exit-entry)<=Math.max(entry*1e-8,1e-10);
+        boolean won=!draw&&(up?exit>entry:exit<entry);
+        double pnl=draw?0:(won?stake*payoutRate:-stake);
+        return new BinaryResult(won,draw,entry,exit,stake,pnl,payoutRate,expiryBars,exitIndex);
+    }
+
     static Result simulate(List<MarketData.Candle> candles, int pivot, boolean isLong,
                            double margin, int leverage, double tpPct, double slPct) {
         if (pivot + 1 >= candles.size()) throw new IllegalArgumentException("Нет свечей после выбранного момента");
