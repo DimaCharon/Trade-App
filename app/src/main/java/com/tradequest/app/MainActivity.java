@@ -32,7 +32,11 @@ import android.widget.Toast;
 import android.text.Editable;
 import android.text.TextWatcher;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import java.text.DecimalFormat;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -73,6 +77,11 @@ public class MainActivity extends Activity {
     private EditText marginInput, tpInput, slInput;
     private Spinner leverageSpinner;
     private TextView riskPreview;
+    private CandlestickChartView setupChart;
+    private final List<JSONObject> tradeHistory=new ArrayList<>();
+    private int calendarMonthOffset=0;
+    private static final String[] PAIRS={"BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT","LINKUSDT","AVAXUSDT","LTCUSDT","BCHUSDT","SUIUSDT","TONUSDT","1000PEPEUSDT","XAUTUSDT"};
+    private static final String[] PAIR_LABELS={"BTC · Bitcoin","ETH · Ethereum","SOL · Solana","XRP · Ripple","DOGE · Dogecoin","ADA · Cardano","LINK · Chainlink","AVAX · Avalanche","LTC · Litecoin","BCH · Bitcoin Cash","SUI · Sui","TON · Toncoin","PEPE · Pepe","XAUT · Gold"};
     private final DecimalFormat priceFmt = new DecimalFormat("#,##0.00");
     private final DecimalFormat moneyFmt = new DecimalFormat("+#,##0.00;-#,##0.00");
 
@@ -87,7 +96,8 @@ public class MainActivity extends Activity {
         trades = prefs.getInt("trades", 0);
         wins = prefs.getInt("wins", 0);
         netPnl = Double.longBitsToDouble(prefs.getLong("netPnl", Double.doubleToLongBits(0.0)));
-        showHome();
+        try { JSONArray a=new JSONArray(prefs.getString("trade_history","[]"));for(int i=0;i<a.length();i++)tradeHistory.add(a.getJSONObject(i)); }catch(Exception ignored){}
+        if(prefs.getString("profile_name","").trim().isEmpty())showWelcome();else showHome();
     }
 
     private int dp(float value) { return (int) (value * getResources().getDisplayMetrics().density + 0.5f); }
@@ -178,8 +188,8 @@ public class MainActivity extends Activity {
     private void addBottomNav(int selected) {
         LinearLayout nav = row(); nav.setBackgroundColor(Color.rgb(13, 15, 20));
         pad(nav, 14, 8, 14, 8); nav.setGravity(Gravity.CENTER);
-        String[] labels = {"Главная", "Практика", "Прогресс"};
-        int[] pages = {0, 1, 4};
+        String[] labels = {"Главная", "Практика", "Календарь", "Профиль"};
+        int[] pages = {0, 1, 8, 9};
         for (int i=0; i<labels.length; i++) {
             final int target = pages[i];
             LinearLayout item = column(); item.setGravity(Gravity.CENTER);
@@ -187,7 +197,7 @@ public class MainActivity extends Activity {
             TextView label = text(labels[i], 10, selected==i?GREEN:MUTED, selected==i); label.setGravity(Gravity.CENTER);
             item.addView(icon); gap(item, 3); item.addView(label);
             LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, dp(46), 1); nav.addView(item, p);
-            item.setOnClickListener(v -> { if(target==0) showHome(); else if(target==1) showPractice(); else showStats(); });
+            item.setOnClickListener(v -> { if(target==0)showHome();else if(target==1)showPractice();else if(target==8)showCalendar();else showProfile(); });
         }
         root.addView(nav, lp(-1, 62));
     }
@@ -243,9 +253,9 @@ public class MainActivity extends Activity {
         LinearLayout pairCard = card();
         pairCard.addView(text("ВЫБЕРИ РЫНОК", 10, MUTED, true)); gap(pairCard, 8);
         LinearLayout selectors = row();
-        Spinner pairSpinner = spinner(new String[]{"BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT"});
+        Spinner pairSpinner = spinner(PAIR_LABELS);
         Spinner tfSpinner = spinner(new String[]{"1 мин", "5 мин", "15 мин", "1 час", "4 часа", "1 день"});
-        String[] pairs = {"BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT"};
+        String[] pairs = PAIRS;
         String[] intervals = {"1", "5", "15", "60", "240", "D"};
         for(int i=0;i<pairs.length;i++) if(pairs[i].equals(symbol)) pairSpinner.setSelection(i);
         for(int i=0;i<intervals.length;i++) if(intervals[i].equals(interval)) tfSpinner.setSelection(i);
@@ -352,8 +362,8 @@ public class MainActivity extends Activity {
         LinearLayout symbolCard=card();
         symbolCard.addView(text(symbol+"  ·  "+intervalLabel(interval)+"  ·  ИСТОРИЯ",13,TEXT,true)); gap(symbolCard,5);
         symbolCard.addView(text("Момент: "+formatDate(candles.get(pivot).time),11,MUTED,false)); gap(symbolCard,12);
-        CandlestickChartView mini=new CandlestickChartView(this); mini.setCandles(candles.subList(Math.max(0,pivot-42),pivot+1));
-        symbolCard.addView(mini,lp(-1,185)); c.addView(symbolCard); gap(c,14);
+        setupChart=new CandlestickChartView(this); setupChart.setCandles(candles.subList(Math.max(0,pivot-42),pivot+1));
+        symbolCard.addView(setupChart,lp(-1,185)); c.addView(symbolCard); gap(c,14);
         LinearLayout direction=card(); direction.addView(text("НАПРАВЛЕНИЕ ПОЗИЦИИ",10,MUTED,true)); gap(direction,10);
         LinearLayout sides=row();
         TextView longBtn=button("↗  LONG",isLong), shortBtn=button("↘  SHORT",!isLong);
@@ -384,6 +394,7 @@ public class MainActivity extends Activity {
                 tradeResult=TradeSimulator.simulate(candles,pivot,isLong,margin,lev,tp,sl);
                 balance+=tradeResult.pnl;
                 trades++; if(tradeResult.pnl>0) wins++;
+                try{JSONObject t=new JSONObject();t.put("time",System.currentTimeMillis());t.put("symbol",symbol);t.put("interval",interval);t.put("side",isLong?"LONG":"SHORT");t.put("entry",tradeResult.entry);t.put("exit",tradeResult.exit);t.put("pnl",tradeResult.pnl);t.put("roi",tradeResult.roi);t.put("reason",tradeResult.reason);t.put("bars",tradeResult.barsHeld);t.put("ambiguous",tradeResult.ambiguous);tradeHistory.add(t);}catch(Exception ignored){}
                 netPnl+=tradeResult.pnl; xp+=tradeResult.hitTp?150:100;
                 persist(); showResult(margin,lev,tp,sl);
             } catch(Exception e){toast("Проверь параметры: "+safeMessage(e));}
@@ -410,6 +421,7 @@ public class MainActivity extends Activity {
             double notional=margin*lev; double win=notional*tp/100.0; double loss=notional*sl/100.0;
             double tpPrice=isLong?entry*(1+tp/100):entry*(1-tp/100);
             double slPrice=isLong?entry*(1-sl/100):entry*(1+sl/100);
+            if(setupChart!=null)setupChart.setMarkers(entry,tpPrice,slPrice);
             riskPreview.setText("Цена входа (следующая свеча):  "+priceFmt.format(entry)+"\n"+
                     "Размер позиции:  "+priceFmt.format(notional)+" USDT\n"+
                     "Take Profit:  "+priceFmt.format(tpPrice)+"  ·  +"+priceFmt.format(win)+" USDT\n"+
@@ -484,7 +496,8 @@ public class MainActivity extends Activity {
     }
 
     private void persist() {
-        prefs.edit().putLong("balance",Double.doubleToLongBits(balance)).putInt("xp",xp).putInt("trades",trades).putInt("wins",wins).putLong("netPnl",Double.doubleToLongBits(netPnl)).apply();
+        JSONArray a=new JSONArray();for(JSONObject t:tradeHistory)a.put(t);
+        prefs.edit().putLong("balance",Double.doubleToLongBits(balance)).putInt("xp",xp).putInt("trades",trades).putInt("wins",wins).putLong("netPnl",Double.doubleToLongBits(netPnl)).putString("trade_history",a.toString()).apply();
     }
 
     private void toast(String value) { Toast.makeText(this,value,Toast.LENGTH_LONG).show(); }
@@ -493,7 +506,7 @@ public class MainActivity extends Activity {
     private String formatDate(long time) { return new SimpleDateFormat("dd.MM.yyyy · HH:mm",Locale.getDefault()).format(new Date(time)); }
 
     @Override public void onBackPressed() {
-        if(page==3||page==2) showPractice(); else if(page==1||page==4||page==5) showHome(); else super.onBackPressed();
+        if(page==3||page==2)showPractice();else if(page==7)showLessons();else if(page==1||page==4||page==5||page==8||page==9)showHome();else super.onBackPressed();
     }
 
     @Override protected void onDestroy() { super.onDestroy(); io.shutdownNow(); }
