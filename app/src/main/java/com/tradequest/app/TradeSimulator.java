@@ -18,27 +18,37 @@ final class TradeSimulator {
     }
 
     static final class BinaryResult {
-        final boolean won, draw;
-        final double entry, exit, stake, pnl, payoutRate;
-        final int expiryBars, exitIndex;
-        BinaryResult(boolean won, boolean draw, double entry, double exit, double stake,
-                     double pnl, double payoutRate, int expiryBars, int exitIndex) {
-            this.won=won;this.draw=draw;this.entry=entry;this.exit=exit;this.stake=stake;
-            this.pnl=pnl;this.payoutRate=payoutRate;this.expiryBars=expiryBars;this.exitIndex=exitIndex;
+        final boolean won,draw;
+        final double entry,exit,stake,pnl,payoutRate;
+        final int expiryMinutes,exitIndex;
+        final long entryTime,expiryTime;
+        BinaryResult(boolean won,boolean draw,double entry,double exit,double stake,double pnl,double payoutRate,
+                     int expiryMinutes,int exitIndex,long entryTime,long expiryTime){
+            this.won=won;this.draw=draw;this.entry=entry;this.exit=exit;this.stake=stake;this.pnl=pnl;
+            this.payoutRate=payoutRate;this.expiryMinutes=expiryMinutes;this.exitIndex=exitIndex;
+            this.entryTime=entryTime;this.expiryTime=expiryTime;
         }
     }
 
     static BinaryResult simulateBinary(List<MarketData.Candle> candles,int pivot,boolean up,
-                                       double stake,int expiryBars,double payoutRate) {
-        if(pivot<0||pivot+expiryBars>=candles.size())throw new IllegalArgumentException("Недостаточно будущих свечей для экспирации");
-        if(stake<=0||expiryBars<1||payoutRate<0||payoutRate>1)throw new IllegalArgumentException("Проверь сумму и срок экспирации");
-        double entry=candles.get(pivot+1).open;
-        int exitIndex=pivot+expiryBars;
+                                       double stake,int expiryMinutes,double payoutRate) {
+        if(pivot<0||pivot+1>=candles.size())throw new IllegalArgumentException("Нет свечи для открытия сделки");
+        if(stake<=0||expiryMinutes<1||expiryMinutes>1440||payoutRate<0||payoutRate>1)
+            throw new IllegalArgumentException("Срок должен быть от 1 минуты до 24 часов");
+        int entryIndex=pivot+1;
+        MarketData.Candle entryCandle=candles.get(entryIndex);
+        double entry=entryCandle.open;
+        long expiryTime=entryCandle.time+expiryMinutes*60000L;
+        int exitIndex=-1;
+        for(int i=entryIndex;i<candles.size();i++){
+            if(candles.get(i).time+60000L>=expiryTime){exitIndex=i;break;}
+        }
+        if(exitIndex<0)throw new IllegalArgumentException("Для этой экспирации не хватает будущей минутной истории. Загрузи другой исторический момент.");
         double exit=candles.get(exitIndex).close;
-        boolean draw=Math.abs(exit-entry)<=Math.max(entry*1e-8,1e-10);
+        boolean draw=Math.abs(exit-entry)<=Math.max(Math.abs(entry)*1e-8,1e-10);
         boolean won=!draw&&(up?exit>entry:exit<entry);
         double pnl=draw?0:(won?stake*payoutRate:-stake);
-        return new BinaryResult(won,draw,entry,exit,stake,pnl,payoutRate,expiryBars,exitIndex);
+        return new BinaryResult(won,draw,entry,exit,stake,pnl,payoutRate,expiryMinutes,exitIndex,entryCandle.time,expiryTime);
     }
 
     static Result simulate(List<MarketData.Candle> candles, int pivot, boolean isLong,
