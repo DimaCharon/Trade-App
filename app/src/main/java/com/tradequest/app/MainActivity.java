@@ -264,13 +264,14 @@ public class MainActivity extends Activity {
         String[] intervals = {"1", "5", "15", "60", "240", "D"};
         for(int i=0;i<pairs.length;i++) if(pairs[i].equals(symbol)) pairSpinner.setSelection(i);
         for(int i=0;i<intervals.length;i++) if(intervals[i].equals(interval)) tfSpinner.setSelection(i);
+        if(binaryMode){tfSpinner.setSelection(0);tfSpinner.setEnabled(false);tfSpinner.setAlpha(.55f);}
         selectors.addView(pairSpinner,new LinearLayout.LayoutParams(0,dp(48),1));
         View spacer = new View(this); selectors.addView(spacer,lp(8,1));
         selectors.addView(tfSpinner,new LinearLayout.LayoutParams(0,dp(48),1)); pairCard.addView(selectors);
         pairSpinner.setOnItemSelectedListener(simpleListener(pos -> { symbol=pairs[pos]; invalidateScenario(); }));
         tfSpinner.setOnItemSelectedListener(simpleListener(pos -> { interval=intervals[pos]; invalidateScenario(); }));
         gap(pairCard, 12);
-        practiceStatus = text("Выбери пару и загрузи исторические свечи Bybit.", 12, MUTED, false); pairCard.addView(practiceStatus);
+        practiceStatus = text(binaryMode?"Бинарный режим использует закрытые минутные свечи Bybit для экспирации от 1 минуты до 24 часов.":"Выбери пару и таймфрейм, затем загрузи исторические свечи Bybit.",12,MUTED,false); pairCard.addView(practiceStatus);
         gap(pairCard, 12); addButton(pairCard, loading?"Загрузка…":"Загрузить случайный момент", false, v -> loadScenario());
         c.addView(pairCard); gap(c, 16);
         LinearLayout modeCard=card();modeCard.addView(text("Тип практики",12,TEXT,true));gap(modeCard,8);
