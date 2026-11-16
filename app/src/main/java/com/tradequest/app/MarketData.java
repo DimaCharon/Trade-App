@@ -57,7 +57,8 @@ final class MarketData {
     }
 
     private static List<Candle> loadPage(String symbol,String interval,Long end,int limit) throws Exception {
-        String query="https://api.bybit.com/v5/market/kline?category=linear&symbol="+symbol
+        String category="XAUTUSDT".equals(symbol)?"spot":"linear";
+        String query="https://api.bybit.com/v5/market/kline?category="+category+"&symbol="+symbol
                 +"&interval="+interval+"&limit="+limit+(end==null?"":"&end="+end);
         HttpURLConnection connection=(HttpURLConnection)new URL(query).openConnection();
         connection.setRequestMethod("GET");connection.setConnectTimeout(10000);connection.setReadTimeout(15000);
