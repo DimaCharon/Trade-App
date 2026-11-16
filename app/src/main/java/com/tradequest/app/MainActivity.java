@@ -395,8 +395,8 @@ public class MainActivity extends Activity {
         LinearLayout dirCard=card();dirCard.addView(text("НАПРАВЛЕНИЕ",12,TEXT,true));gap(dirCard,10);
         LinearLayout dirs=row();TextView up=button("Вверх",isLong),down=button("Вниз",!isLong);
         dirs.addView(up,new LinearLayout.LayoutParams(0,dp(52),1));View sp=new View(this);dirs.addView(sp,lp(10,1));dirs.addView(down,new LinearLayout.LayoutParams(0,dp(52),1));dirCard.addView(dirs);
-        up.setOnClickListener(v->{isLong=true;up.setBackground(ripple(GREEN,14));up.setTextColor(BG);down.setBackground(ripple(PANEL2,14));down.setTextColor(TEXT);});
-        down.setOnClickListener(v->{isLong=false;down.setBackground(ripple(GREEN,14));down.setTextColor(BG);up.setBackground(ripple(PANEL2,14));up.setTextColor(TEXT);});
+        up.setOnClickListener(v->{isLong=true;up.setBackground(ripple(GREEN,14));up.setTextColor(BG);down.setBackground(ripple(PANEL2,14));down.setTextColor(TEXT);updateBinaryPreview(details,expiryMinutes);});
+        down.setOnClickListener(v->{isLong=false;down.setBackground(ripple(GREEN,14));down.setTextColor(BG);up.setBackground(ripple(PANEL2,14));up.setTextColor(TEXT);updateBinaryPreview(details,expiryMinutes);});
         c.addView(dirCard);gap(c,16);
         LinearLayout params=card();params.addView(text("ВРЕМЯ ЭКСПИРАЦИИ И СТАВКА",12,TEXT,true));gap(params,10);
         params.addView(text("Длительность в минутах · от 1 до 1440",12,MUTED,false));gap(params,6);
@@ -455,7 +455,7 @@ public class MainActivity extends Activity {
         result.addView(text((isLong?"Вверх":"Вниз")+" · "+binaryDurationLabel(binaryResult.expiryMinutes)+" · Выплата "+(int)(binaryResult.payoutRate*100)+"%",12,MUTED,false));c.addView(result);gap(c,12);
         LinearLayout chart=card();chart.addView(text(symbol+" · минутная история до экспирации",12,TEXT,true));gap(chart,8);
         resultChart=new CandlestickChartView(this);resultChart.setCandles(candles.subList(Math.max(0,pivot-48),binaryResult.exitIndex+1));resultChart.setBinaryMarkers(binaryResult.entry,binaryResult.exit);chart.addView(resultChart,lp(-1,230));gap(chart,8);
-        chart.addView(text("Вход "+priceFmt.format(binaryResult.entry)+" · Экспирация "+priceFmt.format(binaryResult.exit),11,MUTED,false));c.addView(chart);gap(c,12);
+        chart.addView(text("Вход "+priceFmt.format(binaryResult.entry)+" · Экспирация "+priceFmt.format(binaryResult.exit)+"\nОткрытие: "+formatDate(binaryResult.entryTime)+" · Закрытие: "+formatDate(binaryResult.expiryTime),11,MUTED,false));c.addView(chart);gap(c,12);
         LinearLayout explain=card();explain.addView(text("КАК ПОЛУЧЕН РЕЗУЛЬТАТ",11,GREEN,true));gap(explain,8);
         explain.addView(text("Сравнили открытие первой минутной свечи после выбранной точки с закрытием свечи, достигшей заданного времени экспирации. Длительность: "+binaryDurationLabel(binaryResult.expiryMinutes)+". Будущие свечи не использовались при выборе направления. Результат сохранён в календаре.",12,MUTED,false));c.addView(explain);gap(c,12);
         addButton(c,"Следующая историческая ситуация",true,v->{binaryMode=true;invalidateScenario();showPractice();});addButton(c,"Вернуться в практику",false,v->showPractice());addBottomNav(1);
