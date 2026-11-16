@@ -395,8 +395,8 @@ public class MainActivity extends Activity {
         LinearLayout dirCard=card();dirCard.addView(text("НАПРАВЛЕНИЕ",12,TEXT,true));gap(dirCard,10);
         LinearLayout dirs=row();TextView up=button("Вверх",isLong),down=button("Вниз",!isLong);
         dirs.addView(up,new LinearLayout.LayoutParams(0,dp(52),1));View sp=new View(this);dirs.addView(sp,lp(10,1));dirs.addView(down,new LinearLayout.LayoutParams(0,dp(52),1));dirCard.addView(dirs);
-        up.setOnClickListener(v->{isLong=true;up.setBackground(ripple(GREEN,14));up.setTextColor(BG);down.setBackground(ripple(PANEL2,14));down.setTextColor(TEXT);updateBinaryPreview(details,expiryMinutes);});
-        down.setOnClickListener(v->{isLong=false;down.setBackground(ripple(GREEN,14));down.setTextColor(BG);up.setBackground(ripple(PANEL2,14));up.setTextColor(TEXT);updateBinaryPreview(details,expiryMinutes);});
+
+
         c.addView(dirCard);gap(c,16);
         LinearLayout params=card();params.addView(text("ВРЕМЯ ЭКСПИРАЦИИ И СТАВКА",12,TEXT,true));gap(params,10);
         params.addView(text("Длительность в минутах · от 1 до 1440",12,MUTED,false));gap(params,6);
@@ -405,7 +405,10 @@ public class MainActivity extends Activity {
         params.addView(text("Примеры: 1 мин · 5 мин · 30 мин · 2 часа · 12 часов · 24 часа. Можно ввести любое целое число минут.",10,MUTED,false));gap(params,12);
         params.addView(text("Сумма сделки · USDT",12,MUTED,false));gap(params,6);EditText stake=input("100");params.addView(stake,lp(-1,50));c.addView(params);gap(c,16);
         LinearLayout preview=card();preview.addView(text("ПРЕДВАРИТЕЛЬНЫЕ УСЛОВИЯ",11,GREEN,true));gap(preview,8);
-        TextView details=text("",12,TEXT,false);preview.addView(details);gap(preview,8);
+        TextView details=text("",12,TEXT,false);
+        up.setOnClickListener(v->{isLong=true;up.setBackground(ripple(GREEN,14));up.setTextColor(BG);down.setBackground(ripple(PANEL2,14));down.setTextColor(TEXT);updateBinaryPreview(details,expiryMinutes);});
+        down.setOnClickListener(v->{isLong=false;down.setBackground(ripple(GREEN,14));down.setTextColor(BG);up.setBackground(ripple(PANEL2,14));up.setTextColor(TEXT);updateBinaryPreview(details,expiryMinutes);});
+        preview.addView(details);gap(preview,8);
         preview.addView(text("Расчёт по закрытым минутным свечам Bybit. Вход — открытие первой свечи после исторической точки; экспирация — закрытие первой свечи, достигшей выбранного времени. Выплата +80% — учебное условие, не котировка брокера.",10,MUTED,false));c.addView(preview);gap(c,16);
         TextWatcher expiryWatcher=new TextWatcher(){public void beforeTextChanged(CharSequence x,int st,int count,int after){}public void onTextChanged(CharSequence x,int st,int before,int count){updateBinaryPreview(details,expiryMinutes);}public void afterTextChanged(Editable x){}};
         expiryMinutes.addTextChangedListener(expiryWatcher);updateBinaryPreview(details,expiryMinutes);
