@@ -76,6 +76,7 @@ public class MainActivity extends Activity {
     private double netPnl = 0;
     private boolean loading = false;
     private TextView practiceStatus;
+    private TextView practiceReadout;
     private CandlestickChartView practiceChart;
     private CandlestickChartView resultChart;
     private EditText marginInput, tpInput, slInput;
@@ -276,12 +277,12 @@ public class MainActivity extends Activity {
         LinearLayout modeRow=row();TextView classic=button("Обычная сделка",!binaryMode),binary=button("Бинарная",binaryMode);
         modeRow.addView(classic,new LinearLayout.LayoutParams(0,dp(44),1));View modeGap=new View(this);modeRow.addView(modeGap,lp(8,1));modeRow.addView(binary,new LinearLayout.LayoutParams(0,dp(44),1));modeCard.addView(modeRow);
         modeCard.addView(text(binaryMode?"Выбери направление и срок экспирации. Итог зависит от цены закрытия исторической свечи.":"LONG/SHORT с виртуальной маржой, плечом, TP и SL.",11,MUTED,false));
-        classic.setOnClickListener(v->{if(binaryMode){binaryMode=false;invalidateScenario();showPractice();}});binary.setOnClickListener(v->{if(!binaryMode){binaryMode=true;invalidateScenario();showPractice();}});c.addView(modeCard);gap(c,12);
+        classic.setOnClickListener(v->{if(binaryMode){binaryMode=false;invalidateScenario();showPractice();}});binary.setOnClickListener(v->{if(!binaryMode){binaryMode=true;invalidateScenario();showPractice();}});c.addView(modeCard);gap(c,16);
         LinearLayout chartCard = card();
         LinearLayout chartTop = row(); chartTop.addView(text("График", 10, MUTED, true),new LinearLayout.LayoutParams(0,-2,1));
         chartTop.addView(text(binaryMode?"Bybit · 1m execution":"Bybit · Linear",10,MUTED,false));chartCard.addView(chartTop);gap(chartCard,8);chartCard.addView(text("Свечи · EMA 20/50 · RSI 14 · объём · уровни",10,MUTED,false));gap(chartCard,8);
         practiceChart = new CandlestickChartView(this); practiceChart.setEmptyLabel("Загружаем историю рынка"); chartCard.addView(practiceChart,lp(-1,230)); gap(chartCard, 8);
-        chartCard.addView(text("Будущие свечи скрыты. Решение принимается только по данным, доступным на тот момент.",11,MUTED,false));gap(chartCard,10);chartCard.addView(text(buildMarketReadout(candles,pivot),11,TEXT,false));
+        chartCard.addView(text("Будущие свечи скрыты. Решение принимается только по данным, доступным на тот момент.",11,MUTED,false));gap(chartCard,10);practiceReadout=text(buildMarketReadout(candles,pivot),11,TEXT,false);chartCard.addView(practiceReadout);
         c.addView(chartCard); gap(c, 16);
         LinearLayout info = card(); info.addView(text("КАК ЭТО РАБОТАЕТ", 10, GREEN, true)); gap(info, 8);
         info.addView(text("Выбранная свеча уже закрыта. Вход в симуляции будет по открытию следующей свечи — так приложение не использует будущее для расчёта цены входа.", 12, MUTED, false)); c.addView(info);
@@ -342,7 +343,7 @@ public class MainActivity extends Activity {
                 int selected = min + random.nextInt(Math.max(1,max-min+1));
                 main.post(() -> {
                     loading=false;
-                    if(!requestedSymbol.equals(symbol)||!requestedInterval.equals(interval)||requestedBinary!=binaryMode)return;
+                    if(!requestedSymbol.equals(symbol)||!requestedInterval.equals(interval)||requestedBinary!=binaryMode){if(page==1)loadScenario();return;}
                     candles=loaded;pivot=selected;loadedBinaryHistory=requestedBinary;
                     if(practiceStatus!=null)practiceStatus.setText("Загружено "+loaded.size()+" "+(requestedBinary?"минутных":"исторических")+" свечей · "+formatDate(loaded.get(pivot).time)+" · Bybit API");
                     updatePracticeChart();
@@ -382,6 +383,7 @@ public class MainActivity extends Activity {
         practiceChart.setMarkers(Double.NaN,Double.NaN,Double.NaN);
         practiceChart.setEmptyLabel("");
         practiceChart.invalidate();
+        if(practiceReadout!=null)practiceReadout.setText(buildMarketReadout(candles,pivot));
     }
 
 
