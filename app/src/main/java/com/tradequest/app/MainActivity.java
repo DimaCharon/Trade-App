@@ -368,6 +368,9 @@ public class MainActivity extends Activity {
         double atr=0;for(int i=end-13;i<=end;i++){MarketData.Candle q=data.get(i),p=data.get(i-1);atr+=Math.max(q.high-q.low,Math.max(Math.abs(q.high-p.close),Math.abs(q.low-p.close)));}atr/=14.0;
         double vol=0;for(int i=Math.max(from,end-20);i<end;i++)vol+=data.get(i).volume;double avg=vol/Math.max(1,Math.min(20,end-from));double vr=avg<=0?0:data.get(end).volume/avg;
         double sup=Double.MAX_VALUE,res=-Double.MAX_VALUE;for(int i=Math.max(from,end-49);i<=end;i++){sup=Math.min(sup,data.get(i).low);res=Math.max(res,data.get(i).high);}
+        double e12=data.get(from).close,e26=e12;double[] mline=new double[end-from+1];
+        for(int i=from;i<=end;i++){if(i>from){double p=data.get(i).close;e12=p*(2.0/13.0)+e12*(1-2.0/13.0);e26=p*(2.0/27.0)+e26*(1-2.0/27.0);}mline[i-from]=e12-e26;}
+        double signal=mline[0];for(int i=1;i<mline.length;i++)signal=mline[i]*(2.0/10.0)+signal*(1-2.0/10.0);double macdHist=mline[mline.length-1]-signal;
         String trend=e20>e50&&close>e20?"Восходящий":(e20<e50&&close<e20?"Нисходящий":"Боковой / смешанный");
         return "Тренд: "+trend+"\nEMA20 / EMA50: "+priceFmt.format(e20)+" / "+priceFmt.format(e50)+"\nRSI14: "+priceFmt.format(rsi)+"\nATR14: "+priceFmt.format(atr)+" ("+priceFmt.format(atr/close*100)+"%)\nОбъём: "+priceFmt.format(vr)+"× среднего за 20 свечей\nПоддержка: "+priceFmt.format(sup)+" · Сопротивление: "+priceFmt.format(res)+"\nЭто контекст рынка, а не гарантия направления.";
     }
