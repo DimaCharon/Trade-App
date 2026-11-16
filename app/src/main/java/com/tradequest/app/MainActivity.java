@@ -706,6 +706,10 @@ public class MainActivity extends Activity {
             drawAverage(canvas,20,Color.rgb(115,181,139),left,step,min,max,top,priceBottom);
             drawAverage(canvas,50,Color.rgb(139,147,158),left,step,min,max,top,priceBottom);
             drawLevel(canvas,left,right,min,max,top,priceBottom,entry,Color.rgb(220,224,230),"IN");
+            double support=Double.MAX_VALUE,resistance=-Double.MAX_VALUE;
+            for(int i=Math.max(0,n-50);i<n;i++){support=Math.min(support,values.get(i).low);resistance=Math.max(resistance,values.get(i).high);}
+            drawLevel(canvas,left,right,min,max,top,priceBottom,support,Color.rgb(110,145,124),"S");
+            drawLevel(canvas,left,right,min,max,top,priceBottom,resistance,Color.rgb(151,135,112),"R");
             drawLevel(canvas,left,right,min,max,top,priceBottom,tp,GREEN,tpTag);
             drawLevel(canvas,left,right,min,max,top,priceBottom,sl,RED,slTag);
             MarketData.Candle last=values.get(n-1);double rv=rsi(14);
