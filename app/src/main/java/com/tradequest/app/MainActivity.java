@@ -358,6 +358,20 @@ public class MainActivity extends Activity {
         });
     }
 
+    private String buildMarketReadout(List<MarketData.Candle> data,int end){
+        if(data==null||end<30||end>=data.size())return "Недостаточно данных.";
+        int from=Math.max(0,end-59);double close=data.get(end).close;
+        double e20=data.get(from).close,e50=e20;
+        for(int i=from+1;i<=end;i++){double p=data.get(i).close;e20=p*(2.0/21.0)+e20*(1-2.0/21.0);e50=p*(2.0/51.0)+e50*(1-2.0/51.0);}
+        double g=0,l=0;for(int i=end-13;i<=end;i++){double d=data.get(i).close-data.get(i-1).close;if(d>0)g+=d;else l-=d;}
+        double rsi=l==0?100:100-100/(1+(g/14.0)/(l/14.0));
+        double atr=0;for(int i=end-13;i<=end;i++){MarketData.Candle q=data.get(i),p=data.get(i-1);atr+=Math.max(q.high-q.low,Math.max(Math.abs(q.high-p.close),Math.abs(q.low-p.close)));}atr/=14.0;
+        double vol=0;for(int i=Math.max(from,end-20);i<end;i++)vol+=data.get(i).volume;double avg=vol/Math.max(1,Math.min(20,end-from));double vr=avg<=0?0:data.get(end).volume/avg;
+        double sup=Double.MAX_VALUE,res=-Double.MAX_VALUE;for(int i=Math.max(from,end-49);i<=end;i++){sup=Math.min(sup,data.get(i).low);res=Math.max(res,data.get(i).high);}
+        String trend=e20>e50&&close>e20?"Восходящий":(e20<e50&&close<e20?"Нисходящий":"Боковой / смешанный");
+        return "Тренд: "+trend+"\nEMA20 / EMA50: "+priceFmt.format(e20)+" / "+priceFmt.format(e50)+"\nRSI14: "+priceFmt.format(rsi)+"\nATR14: "+priceFmt.format(atr)+" ("+priceFmt.format(atr/close*100)+"%)\nОбъём: "+priceFmt.format(vr)+"× среднего за 20 свечей\nПоддержка: "+priceFmt.format(sup)+" · Сопротивление: "+priceFmt.format(res)+"\nЭто контекст рынка, а не гарантия направления.";
+    }
+
     private void updatePracticeChart() {
         if(practiceChart==null || pivot<0 || candles.isEmpty()) return;
         int start=Math.max(0,pivot-55);
