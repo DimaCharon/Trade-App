@@ -370,42 +370,82 @@ public class MainActivity extends Activity {
 
     private void showBinarySetup(){
         page=2;beginPage("Бинарная сделка",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);
-        LinearLayout chartCard=card();chartCard.addView(text(symbol+" · "+intervalLabel(interval),13,TEXT,true));gap(chartCard,4);
+        LinearLayout chartCard=card();chartCard.addView(text(symbol+" · 1M · ИСТОРИЯ",13,TEXT,true));gap(chartCard,4);
         chartCard.addView(text("Историческая точка · "+formatDate(candles.get(pivot).time),11,MUTED,false));gap(chartCard,8);
-        setupChart=new CandlestickChartView(this);setupChart.setCandles(candles.subList(Math.max(0,pivot-48),pivot+1));chartCard.addView(setupChart,lp(-1,220));c.addView(chartCard);gap(c,12);
-        LinearLayout dirCard=card();dirCard.addView(text("КУДА ЗАКРОЕТСЯ ЦЕНА",12,TEXT,true));gap(dirCard,8);
-        LinearLayout dirs=row();TextView up=button("Вверх",isLong),down=button("Вниз",!isLong);dirs.addView(up,new LinearLayout.LayoutParams(0,dp(48),1));View sp=new View(this);dirs.addView(sp,lp(8,1));dirs.addView(down,new LinearLayout.LayoutParams(0,dp(48),1));dirCard.addView(dirs);
-        up.setOnClickListener(v->{isLong=true;up.setBackground(ripple(GREEN,10));up.setTextColor(BG);down.setBackground(ripple(PANEL2,10));down.setTextColor(TEXT);});
-        down.setOnClickListener(v->{isLong=false;down.setBackground(ripple(GREEN,10));down.setTextColor(BG);up.setBackground(ripple(PANEL2,10));up.setTextColor(TEXT);});c.addView(dirCard);gap(c,12);
-        LinearLayout params=card();params.addView(text("СРОК И СТАВКА",12,TEXT,true));gap(params,8);
-        params.addView(text("Экспирация",12,MUTED,false));gap(params,4);Spinner expiry=spinner(new String[]{"1 свеча","3 свечи","5 свечей"});params.addView(expiry,lp(-1,48));gap(params,8);
-        params.addView(text("Сумма сделки · USDT",12,MUTED,false));gap(params,4);EditText stake=input("100");params.addView(stake,lp(-1,48));c.addView(params);gap(c,12);
-        LinearLayout preview=card();preview.addView(text("УСЛОВИЯ РАСЧЁТА",11,GREEN,true));gap(preview,8);
-        TextView details=text("Вход: открытие следующей свечи\nЭкспирация: закрытие выбранной будущей свечи\nВыплата при верном направлении: +80% от ставки\nПри неверном направлении: −100% ставки\nПри равной цене: возврат ставки",12,TEXT,false);preview.addView(details);gap(preview,8);
-        preview.addView(text("80% здесь задано как учебное условие тренажёра. Это не котировка брокера. Комиссии и спред не моделируются.",10,MUTED,false));c.addView(preview);gap(c,12);
+        setupChart=new CandlestickChartView(this);setupChart.setCandles(candles.subList(Math.max(0,pivot-48),pivot+1));chartCard.addView(setupChart,lp(-1,220));c.addView(chartCard);gap(c,16);
+        LinearLayout dirCard=card();dirCard.addView(text("НАПРАВЛЕНИЕ",12,TEXT,true));gap(dirCard,10);
+        LinearLayout dirs=row();TextView up=button("Вверх",isLong),down=button("Вниз",!isLong);
+        dirs.addView(up,new LinearLayout.LayoutParams(0,dp(52),1));View sp=new View(this);dirs.addView(sp,lp(10,1));dirs.addView(down,new LinearLayout.LayoutParams(0,dp(52),1));dirCard.addView(dirs);
+        up.setOnClickListener(v->{isLong=true;up.setBackground(ripple(GREEN,14));up.setTextColor(BG);down.setBackground(ripple(PANEL2,14));down.setTextColor(TEXT);});
+        down.setOnClickListener(v->{isLong=false;down.setBackground(ripple(GREEN,14));down.setTextColor(BG);up.setBackground(ripple(PANEL2,14));up.setTextColor(TEXT);});
+        c.addView(dirCard);gap(c,16);
+        LinearLayout params=card();params.addView(text("ВРЕМЯ ЭКСПИРАЦИИ И СТАВКА",12,TEXT,true));gap(params,10);
+        params.addView(text("Длительность в минутах · от 1 до 1440",12,MUTED,false));gap(params,6);
+        EditText expiryMinutes=input("15");expiryMinutes.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);expiryMinutes.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(4)});
+        params.addView(expiryMinutes,lp(-1,50));gap(params,6);
+        params.addView(text("Примеры: 1 мин · 5 мин · 30 мин · 2 часа · 12 часов · 24 часа. Можно ввести любое целое число минут.",10,MUTED,false));gap(params,12);
+        params.addView(text("Сумма сделки · USDT",12,MUTED,false));gap(params,6);EditText stake=input("100");params.addView(stake,lp(-1,50));c.addView(params);gap(c,16);
+        LinearLayout preview=card();preview.addView(text("ПРЕДВАРИТЕЛЬНЫЕ УСЛОВИЯ",11,GREEN,true));gap(preview,8);
+        TextView details=text("",12,TEXT,false);preview.addView(details);gap(preview,8);
+        preview.addView(text("Расчёт по закрытым минутным свечам Bybit. Вход — открытие первой свечи после исторической точки; экспирация — закрытие первой свечи, достигшей выбранного времени. Выплата +80% — учебное условие, не котировка брокера.",10,MUTED,false));c.addView(preview);gap(c,16);
+        TextWatcher expiryWatcher=new TextWatcher(){public void beforeTextChanged(CharSequence x,int st,int count,int after){}public void onTextChanged(CharSequence x,int st,int before,int count){updateBinaryPreview(details,expiryMinutes);}public void afterTextChanged(Editable x){}};
+        expiryMinutes.addTextChangedListener(expiryWatcher);updateBinaryPreview(details,expiryMinutes);
         addButton(c,"Открыть историческую сделку",true,v->{
             try{
-                double amount=parse(stake.getText().toString());int bars=expiry.getSelectedItemPosition()==0?1:(expiry.getSelectedItemPosition()==1?3:5);
+                int minutes=Integer.parseInt(expiryMinutes.getText().toString().trim());
+                double amount=parse(stake.getText().toString());
+                if(minutes<1||minutes>1440){toast("Укажи срок от 1 до 1440 минут");return;}
                 if(amount<=0||amount>balance){toast("Ставка должна быть больше нуля и не превышать баланс");return;}
-                binaryResult=TradeSimulator.simulateBinary(candles,pivot,isLong,amount,bars,BINARY_PAYOUT);
+                binaryResult=TradeSimulator.simulateBinary(candles,pivot,isLong,amount,minutes,BINARY_PAYOUT);
                 balance+=binaryResult.pnl;trades++;if(binaryResult.won)wins++;netPnl+=binaryResult.pnl;xp+=binaryResult.won?100:50;
-                try{JSONObject t=new JSONObject();t.put("time",System.currentTimeMillis());t.put("symbol",symbol);t.put("interval",interval);t.put("side",isLong?"UP":"DOWN");t.put("entry",binaryResult.entry);t.put("exit",binaryResult.exit);t.put("pnl",binaryResult.pnl);t.put("roi",binaryResult.stake==0?0:binaryResult.pnl/binaryResult.stake*100);t.put("reason",binaryResult.draw?"ВОЗВРАТ · РАВНАЯ ЦЕНА":(binaryResult.won?"ВЕРНОЕ НАПРАВЛЕНИЕ":"НЕВЕРНОЕ НАПРАВЛЕНИЕ"));t.put("bars",binaryResult.expiryBars);t.put("ambiguous",false);t.put("type","BINARY");tradeHistory.add(t);}catch(Exception ignored){}
+                try{JSONObject t=new JSONObject();t.put("time",System.currentTimeMillis());t.put("symbol",symbol);t.put("interval","1");t.put("side",isLong?"UP":"DOWN");t.put("entry",binaryResult.entry);t.put("exit",binaryResult.exit);t.put("pnl",binaryResult.pnl);t.put("roi",binaryResult.stake==0?0:binaryResult.pnl/binaryResult.stake*100);t.put("reason",binaryResult.draw?"ВОЗВРАТ · РАВНАЯ ЦЕНА":(binaryResult.won?"ВЕРНОЕ НАПРАВЛЕНИЕ":"НЕВЕРНОЕ НАПРАВЛЕНИЕ"));t.put("expiryMinutes",binaryResult.expiryMinutes);t.put("bars",binaryResult.expiryMinutes);t.put("ambiguous",false);t.put("type","BINARY");tradeHistory.add(t);}catch(Exception ignored){}
                 persist();showBinaryResult();
-            }catch(Exception e){toast("Не удалось рассчитать сделку: "+safeMessage(e));}
+            }catch(NumberFormatException e){toast("Введи длительность в минутах");}
+            catch(Exception e){toast("Не удалось рассчитать сделку: "+safeMessage(e));}
         });addBottomNav(1);
+    }
+
+    private int binaryExpiryIndex(int minutes){
+        if(pivot<0||pivot+1>=candles.size())return -1;
+        long target=candles.get(pivot+1).time+minutes*60000L;
+        for(int i=pivot+1;i<candles.size();i++)if(candles.get(i).time+60000L>=target)return i;
+        return -1;
+    }
+
+    private void updateBinaryPreview(TextView target,EditText expiryInput){
+        try{
+            int minutes=Integer.parseInt(expiryInput.getText().toString().trim());
+            if(minutes<1||minutes>1440){target.setText("Допустимый срок: от 1 до 1440 минут.");return;}
+            int exitIndex=binaryExpiryIndex(minutes);
+            if(exitIndex<0){target.setText("Для выбранного времени не хватает будущих минутных свечей. Загрузи новый исторический момент.");return;}
+            MarketData.Candle entry=candles.get(pivot+1),exit=candles.get(exitIndex);
+            target.setText("Направление: "+(isLong?"ВВЕРХ":"ВНИЗ")+"\n"+
+                    "Цена входа: "+priceFmt.format(entry.open)+"\n"+
+                    "Время входа: "+formatDate(entry.time)+"\n"+
+                    "Время экспирации: "+formatDate(exit.time+60000L)+"\n"+
+                    "Ожидаемая расчётная свеча: "+priceFmt.format(exit.close)+"\n"+
+                    "Ставка при выигрыше: +80% · при проигрыше: −100%");
+        }catch(Exception e){target.setText("Введи целое число минут от 1 до 1440.");}
     }
 
     private void showBinaryResult(){
         page=3;beginPage("Результат бинарной сделки",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);
-        boolean positive=binaryResult.pnl>0;LinearLayout card=card();card.addView(text(binaryResult.draw?"ВОЗВРАТ СТАВКИ":(binaryResult.won?"ВЕРНО":"НЕВЕРНО"),11,binaryResult.draw?MUTED:(positive?GREEN:RED),true));gap(card,8);
-        card.addView(text(moneyFmt.format(binaryResult.pnl)+" USDT",30,TEXT,true));gap(card,8);
-        card.addView(text((isLong?"Вверх":"Вниз")+" · "+binaryResult.expiryBars+" свеч. · Выплата "+(int)(binaryResult.payoutRate*100)+"%",12,MUTED,false));c.addView(card);gap(c,12);
-        LinearLayout chart=card();chart.addView(text(symbol+" · история до экспирации",12,TEXT,true));gap(chart,8);
+        boolean positive=binaryResult.pnl>0;LinearLayout result=card();
+        result.addView(text(binaryResult.draw?"ВОЗВРАТ СТАВКИ":(binaryResult.won?"ВЕРНО":"НЕВЕРНО"),11,binaryResult.draw?MUTED:(positive?GREEN:RED),true));gap(result,8);
+        result.addView(text(moneyFmt.format(binaryResult.pnl)+" USDT",30,TEXT,true));gap(result,8);
+        result.addView(text((isLong?"Вверх":"Вниз")+" · "+binaryDurationLabel(binaryResult.expiryMinutes)+" · Выплата "+(int)(binaryResult.payoutRate*100)+"%",12,MUTED,false));c.addView(result);gap(c,12);
+        LinearLayout chart=card();chart.addView(text(symbol+" · минутная история до экспирации",12,TEXT,true));gap(chart,8);
         resultChart=new CandlestickChartView(this);resultChart.setCandles(candles.subList(Math.max(0,pivot-48),binaryResult.exitIndex+1));resultChart.setBinaryMarkers(binaryResult.entry,binaryResult.exit);chart.addView(resultChart,lp(-1,230));gap(chart,8);
-        chart.addView(text("Вход "+priceFmt.format(binaryResult.entry)+" · Цена экспирации "+priceFmt.format(binaryResult.exit),11,MUTED,false));c.addView(chart);gap(c,12);
+        chart.addView(text("Вход "+priceFmt.format(binaryResult.entry)+" · Экспирация "+priceFmt.format(binaryResult.exit),11,MUTED,false));c.addView(chart);gap(c,12);
         LinearLayout explain=card();explain.addView(text("КАК ПОЛУЧЕН РЕЗУЛЬТАТ",11,GREEN,true));gap(explain,8);
-        explain.addView(text("Сравнили цену открытия следующей свечи с ценой закрытия свечи экспирации. Будущие данные не использовались при выборе направления. Результат сохранён в календаре.",12,MUTED,false));c.addView(explain);gap(c,12);
-        addButton(c,"Следующая историческая ситуация",true,v->{binaryMode=true;showPractice();loadScenario();});addButton(c,"Вернуться в практику",false,v->showPractice());addBottomNav(1);
+        explain.addView(text("Сравнили открытие первой минутной свечи после выбранной точки с закрытием свечи, достигшей заданного времени экспирации. Длительность: "+binaryDurationLabel(binaryResult.expiryMinutes)+". Будущие свечи не использовались при выборе направления. Результат сохранён в календаре.",12,MUTED,false));c.addView(explain);gap(c,12);
+        addButton(c,"Следующая историческая ситуация",true,v->{binaryMode=true;invalidateScenario();showPractice();});addButton(c,"Вернуться в практику",false,v->showPractice());addBottomNav(1);
+    }
+
+    private String binaryDurationLabel(int minutes){
+        if(minutes<60)return minutes+" мин";
+        if(minutes%60==0)return (minutes/60)+" ч";
+        return (minutes/60)+" ч "+(minutes%60)+" мин";
     }
 
     private void showSetup() {
