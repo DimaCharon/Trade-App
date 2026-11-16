@@ -271,7 +271,7 @@ public class MainActivity extends Activity {
         gap(pairCard, 12);
         practiceStatus = text("Выбери пару и загрузи исторические свечи Bybit.", 12, MUTED, false); pairCard.addView(practiceStatus);
         gap(pairCard, 12); addButton(pairCard, loading?"Загрузка…":"Загрузить случайный момент", false, v -> loadScenario());
-        c.addView(pairCard); gap(c, 12);
+        c.addView(pairCard); gap(c, 16);
         LinearLayout modeCard=card();modeCard.addView(text("Тип практики",12,TEXT,true));gap(modeCard,8);
         LinearLayout modeRow=row();TextView classic=button("Обычная сделка",!binaryMode),binary=button("Бинарная",binaryMode);
         modeRow.addView(classic,new LinearLayout.LayoutParams(0,dp(44),1));View modeGap=new View(this);modeRow.addView(modeGap,lp(8,1));modeRow.addView(binary,new LinearLayout.LayoutParams(0,dp(44),1));modeCard.addView(modeRow);
@@ -285,7 +285,7 @@ public class MainActivity extends Activity {
         c.addView(chartCard); gap(c, 16);
         LinearLayout info = card(); info.addView(text("КАК ЭТО РАБОТАЕТ", 10, GREEN, true)); gap(info, 8);
         info.addView(text("Выбранная свеча уже закрыта. Вход в симуляции будет по открытию следующей свечи — так приложение не использует будущее для расчёта цены входа.", 12, MUTED, false)); c.addView(info);
-        gap(c, 12);
+        gap(c, 16);
         addButton(c, binaryMode?"Выбрать направление и экспирацию":"Настроить сделку", true, v -> { if (pivot < 0 || candles.isEmpty()) toast("Сначала загрузи исторический момент"); else if(binaryMode)showBinarySetup();else showSetup(); });
         addBottomNav(1);
         if (candles.isEmpty() && !loading) loadScenario();
