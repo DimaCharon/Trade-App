@@ -68,6 +68,7 @@ public class MainActivity extends Activity {
     private TradeSimulator.Result tradeResult;
     private boolean isLong = true;
     private boolean binaryMode = false;
+    private boolean loadedBinaryHistory = false;
     private TradeSimulator.BinaryResult binaryResult;
     private static final double BINARY_PAYOUT = 0.80;
     private double balance = 10000.0;
@@ -155,8 +156,12 @@ public class MainActivity extends Activity {
     }
 
     private void addButton(LinearLayout parent, String label, boolean primary, View.OnClickListener listener) {
-        TextView b = button(label, primary); parent.addView(b, lp(-1, 52));
-        b.setOnClickListener(v -> { v.animate().scaleX(.985f).scaleY(.985f).setDuration(70).withEndAction(() -> v.animate().scaleX(1f).scaleY(1f).setDuration(100).start()).start(); listener.onClick(v); });
+        TextView b=button(label,primary);LinearLayout.LayoutParams p=lp(-1,52);p.bottomMargin=dp(8);parent.addView(b,p);
+        b.setOnClickListener(v->{v.animate().scaleX(.985f).scaleY(.985f).setDuration(70).withEndAction(()->v.animate().scaleX(1f).scaleY(1f).setDuration(100).start()).start();listener.onClick(v);});
+    }
+
+    private void addProfileButton(LinearLayout parent,String label,View.OnClickListener listener){
+        TextView b=button(label,false);b.setGravity(Gravity.CENTER);LinearLayout.LayoutParams p=lp(-1,58);p.bottomMargin=dp(12);parent.addView(b,p);b.setOnClickListener(listener);
     }
 
     private void beginPage(String title, boolean back) {
@@ -224,8 +229,8 @@ public class MainActivity extends Activity {
         bottom.addView(text(trades + " сделок", 12, TEXT, true)); wallet.addView(bottom); c.addView(wallet);
         gap(c, 24);
         LinearLayout quick=row();
-        LinearLayout practiceTile=card();practiceTile.addView(text("ПРАКТИКА",10,GREEN,true));gap(practiceTile,8);practiceTile.addView(text("Исторические сделки",15,TEXT,true));gap(practiceTile,4);practiceTile.addView(text("Работа с реальными свечами",11,MUTED,false));practiceTile.setOnClickListener(v->showPractice());quick.addView(practiceTile,new LinearLayout.LayoutParams(0,-2,1));
-        LinearLayout calendarTile=card();calendarTile.addView(text("КАЛЕНДАРЬ",10,GREEN,true));gap(calendarTile,8);calendarTile.addView(text("Мои сделки",15,TEXT,true));gap(calendarTile,4);calendarTile.addView(text("Автоматический P&L",11,MUTED,false));calendarTile.setOnClickListener(v->showCalendar());LinearLayout.LayoutParams calp=new LinearLayout.LayoutParams(0,-2,1);calp.leftMargin=dp(8);quick.addView(calendarTile,calp);c.addView(quick);
+        LinearLayout practiceTile=card();practiceTile.addView(text("ПРАКТИКА",10,GREEN,true));gap(practiceTile,8);practiceTile.addView(text("Исторические сделки",15,TEXT,true));gap(practiceTile,4);practiceTile.addView(text("Работа с реальными свечами",11,MUTED,false));practiceTile.setOnClickListener(v->showPractice());quick.addView(practiceTile,new LinearLayout.LayoutParams(0,dp(154),1));
+        LinearLayout calendarTile=card();calendarTile.addView(text("КАЛЕНДАРЬ",10,GREEN,true));gap(calendarTile,8);calendarTile.addView(text("Мои сделки",15,TEXT,true));gap(calendarTile,4);calendarTile.addView(text("Автоматический P&L",11,MUTED,false));calendarTile.setOnClickListener(v->showCalendar());LinearLayout.LayoutParams calp=new LinearLayout.LayoutParams(0,-2,1);calp.leftMargin=dp(8);calp.height=dp(154);quick.addView(calendarTile,calp);c.addView(quick);
         gap(c,24);
         LinearLayout section = row(); section.addView(text("ТВОЙ ПУТЬ", 11, MUTED, true), new LinearLayout.LayoutParams(0, -2, 1));
         TextView all = text("Все уроки", 12, GREEN, true); section.addView(all); all.setOnClickListener(v -> showLessons()); c.addView(section);
@@ -271,12 +276,12 @@ public class MainActivity extends Activity {
         LinearLayout modeRow=row();TextView classic=button("Обычная сделка",!binaryMode),binary=button("Бинарная",binaryMode);
         modeRow.addView(classic,new LinearLayout.LayoutParams(0,dp(44),1));View modeGap=new View(this);modeRow.addView(modeGap,lp(8,1));modeRow.addView(binary,new LinearLayout.LayoutParams(0,dp(44),1));modeCard.addView(modeRow);
         modeCard.addView(text(binaryMode?"Выбери направление и срок экспирации. Итог зависит от цены закрытия исторической свечи.":"LONG/SHORT с виртуальной маржой, плечом, TP и SL.",11,MUTED,false));
-        classic.setOnClickListener(v->{if(binaryMode){binaryMode=false;showPractice();}});binary.setOnClickListener(v->{if(!binaryMode){binaryMode=true;showPractice();}});c.addView(modeCard);gap(c,12);
+        classic.setOnClickListener(v->{if(binaryMode){binaryMode=false;invalidateScenario();showPractice();}});binary.setOnClickListener(v->{if(!binaryMode){binaryMode=true;invalidateScenario();showPractice();}});c.addView(modeCard);gap(c,12);
         LinearLayout chartCard = card();
         LinearLayout chartTop = row(); chartTop.addView(text("График", 10, MUTED, true),new LinearLayout.LayoutParams(0,-2,1));
-        chartTop.addView(text("Bybit · Linear", 10, MUTED, false)); chartCard.addView(chartTop);gap(chartCard,8);chartCard.addView(text("Свечи · EMA 20/50 · RSI 14 · объём",10,MUTED,false));gap(chartCard,8);
+        chartTop.addView(text(binaryMode?"Bybit · 1m execution":"Bybit · Linear",10,MUTED,false));chartCard.addView(chartTop);gap(chartCard,8);chartCard.addView(text("Свечи · EMA 20/50 · RSI 14 · объём · уровни",10,MUTED,false));gap(chartCard,8);
         practiceChart = new CandlestickChartView(this); practiceChart.setEmptyLabel("Загружаем историю рынка"); chartCard.addView(practiceChart,lp(-1,230)); gap(chartCard, 8);
-        chartCard.addView(text("Будущие свечи скрыты. Решение принимается только по данным, доступным на тот момент.", 11, MUTED, false));
+        chartCard.addView(text("Будущие свечи скрыты. Решение принимается только по данным, доступным на тот момент.",11,MUTED,false));gap(chartCard,10);chartCard.addView(text(buildMarketReadout(candles,pivot),11,TEXT,false));
         c.addView(chartCard); gap(c, 16);
         LinearLayout info = card(); info.addView(text("КАК ЭТО РАБОТАЕТ", 10, GREEN, true)); gap(info, 8);
         info.addView(text("Выбранная свеча уже закрыта. Вход в симуляции будет по открытию следующей свечи — так приложение не использует будущее для расчёта цены входа.", 12, MUTED, false)); c.addView(info);
@@ -323,27 +328,29 @@ public class MainActivity extends Activity {
     private void loadScenario() {
         if (loading) return;
         loading=true;
-        final String requestedSymbol = symbol;
-        final String requestedInterval = interval;
+        final String requestedSymbol=symbol;
+        final String requestedInterval=interval;
+        final boolean requestedBinary=binaryMode;
         if (practiceStatus != null) practiceStatus.setText("Подключаемся к Bybit и загружаем реальные свечи…");
         io.execute(() -> {
             try {
-                List<MarketData.Candle> loaded = MarketData.load(requestedSymbol, requestedInterval);
-                Random random = new Random();
-                int min = Math.max(70, loaded.size()-250);
-                int max = loaded.size()-45;
+                List<MarketData.Candle> loaded=requestedBinary?MarketData.loadBinaryHistory(requestedSymbol):MarketData.load(requestedSymbol,requestedInterval);
+                Random random=new Random();
+                int min=70;
+                int max=requestedBinary?loaded.size()-1442:loaded.size()-45;
+                if(max<min)throw new Exception("Недостаточно будущих минутных свечей для случайного момента");
                 int selected = min + random.nextInt(Math.max(1,max-min+1));
                 main.post(() -> {
                     loading=false;
-                    if (!requestedSymbol.equals(symbol) || !requestedInterval.equals(interval)) return;
-                    candles=loaded; pivot=selected;
-                    if (practiceStatus!=null) practiceStatus.setText("Загружено " + loaded.size() + " свечей · " + formatDate(loaded.get(pivot).time) + " · Bybit API");
+                    if(!requestedSymbol.equals(symbol)||!requestedInterval.equals(interval)||requestedBinary!=binaryMode)return;
+                    candles=loaded;pivot=selected;loadedBinaryHistory=requestedBinary;
+                    if(practiceStatus!=null)practiceStatus.setText("Загружено "+loaded.size()+" "+(requestedBinary?"минутных":"исторических")+" свечей · "+formatDate(loaded.get(pivot).time)+" · Bybit API");
                     updatePracticeChart();
                 });
             } catch (Exception e) {
                 main.post(() -> {
                     loading=false;
-                    if (!requestedSymbol.equals(symbol) || !requestedInterval.equals(interval)) return;
+                    if(!requestedSymbol.equals(symbol)||!requestedInterval.equals(interval)||requestedBinary!=binaryMode)return;
                     if (practiceStatus!=null) practiceStatus.setText("Не удалось загрузить историю: " + safeMessage(e) + "\nПроверь интернет или попробуй позже.");
                     if (practiceChart!=null) practiceChart.setEmptyLabel("Нет данных. Нажми загрузить ещё раз.");
                 });
@@ -596,9 +603,11 @@ public class MainActivity extends Activity {
         page=9;beginPage("Личный кабинет",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);String name=prefs.getString("profile_name","Трейдер");
         LinearLayout hero=card();TextView avatar=text(name.substring(0,1).toUpperCase(Locale.getDefault()),28,BG,true);avatar.setGravity(Gravity.CENTER);avatar.setBackground(shape(GREEN,28,GREEN,0));hero.addView(avatar,lp(58,58));gap(hero,8);hero.addView(text(name,23,TEXT,true));gap(hero,4);hero.addView(text(prefs.getString("profile_email","Локальный профиль"),12,MUTED,false));gap(hero,8);hero.addView(text("Уровень "+(xp/500+1)+" · "+xp+" XP",13,GREEN,true));c.addView(hero);gap(c,12);
         LinearLayout metrics=row();addMetric(metrics,"СДЕЛОК",String.valueOf(trades));addMetric(metrics,"WIN RATE",trades==0?"—":priceFmt.format((double)wins/trades*100)+"%");c.addView(metrics);gap(c,12);
-        addButton(c,"Календарь сделок",false,v->showCalendar());addButton(c,"Мой прогресс",false,v->showStats());addButton(c,"Карта обучения",false,v->showLessons());
-        addButton(c,"Изменить имя",false,v->{EditText e=textInput(name);new android.app.AlertDialog.Builder(this).setTitle("Имя профиля").setView(e).setNegativeButton("Отмена",null).setPositiveButton("Сохранить",(d,w)->{String n=e.getText().toString().trim();if(n.length()>1){prefs.edit().putString("profile_name",n).apply();showProfile();}}).show();});
-        addButton(c,"Выйти из профиля",false,v->new android.app.AlertDialog.Builder(this).setTitle("Выйти?").setMessage("Локальная история и прогресс сохранятся на устройстве.").setNegativeButton("Отмена",null).setPositiveButton("Выйти",(d,w)->{prefs.edit().remove("profile_name").remove("profile_email").apply();showWelcome();}).show());addBottomNav(3);
+        addProfileButton(c,"Календарь сделок",v->showCalendar());
+        addProfileButton(c,"Мой прогресс",v->showStats());
+        addProfileButton(c,"Карта обучения",v->showLessons());
+        addProfileButton(c,"Изменить имя",v->{EditText e=textInput(name);new android.app.AlertDialog.Builder(this).setTitle("Имя профиля").setView(e).setNegativeButton("Отмена",null).setPositiveButton("Сохранить",(d,w)->{String n=e.getText().toString().trim();if(n.length()>1){prefs.edit().putString("profile_name",n).apply();showProfile();}}).show();});
+        addProfileButton(c,"Выйти из профиля",v->new android.app.AlertDialog.Builder(this).setTitle("Выйти?").setMessage("Локальная история и прогресс сохранятся на устройстве.").setNegativeButton("Отмена",null).setPositiveButton("Выйти",(d,w)->{prefs.edit().remove("profile_name").remove("profile_email").apply();showWelcome();}).show());addBottomNav(3);
     }
 
     private void persist() {
