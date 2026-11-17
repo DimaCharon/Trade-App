@@ -22,6 +22,7 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -102,7 +103,7 @@ public class MainActivity extends Activity {
         wins = prefs.getInt("wins", 0);
         netPnl = Double.longBitsToDouble(prefs.getLong("netPnl", Double.doubleToLongBits(0.0)));
         try { JSONArray a=new JSONArray(prefs.getString("trade_history","[]"));for(int i=0;i<a.length();i++)tradeHistory.add(a.getJSONObject(i)); }catch(Exception ignored){}
-        if(prefs.getString("profile_name","").trim().isEmpty())showWelcome();else showHome();
+        if(prefs.getString("profile_name","").trim().isEmpty())showWelcome();else { updateDailyStreak(); showHome(); }
     }
 
     private int dp(float value) { return (int) (value * getResources().getDisplayMetrics().density + 0.5f); }
@@ -172,13 +173,18 @@ public class MainActivity extends Activity {
         if (back) {
             TextView backView = text("‹", 32, TEXT, false); backView.setGravity(Gravity.CENTER);
             header.addView(backView, lp(38, 42)); backView.setOnClickListener(v -> onBackPressed());
+        } else if ("TRADEQUEST".equals(title)) {
+            TextView brand = text("TradeQuest", 34, TEXT, false);
+            brand.setTypeface(Typeface.create("cursive", Typeface.NORMAL));
+            brand.setGravity(Gravity.CENTER);
+            header.addView(brand, new LinearLayout.LayoutParams(-1, dp(48)));
         } else {
             TextView mark = text("TQ", 14, Color.rgb(14, 20, 11), true); mark.setGravity(Gravity.CENTER);
             mark.setBackground(shape(GREEN, 13, GREEN, 0)); header.addView(mark, lp(38, 38));
+            TextView titleView = text(title, 19, TEXT, true);
+            LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(0, dp(42), 1); titleLp.leftMargin = dp(10);
+            header.addView(titleView, titleLp);
         }
-        TextView titleView = text(title, 19, TEXT, true);
-        LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(0, dp(42), 1); titleLp.leftMargin = dp(10);
-        header.addView(titleView, titleLp);
         root.addView(header);
         root.animate().alpha(1f).setDuration(220).start();
     }
@@ -226,30 +232,30 @@ public class MainActivity extends Activity {
         xpCol.addView(text("ОПЫТ", 10, MUTED, true)); gap(xpCol, 8); xpCol.addView(text(xp + " XP", 18, GREEN, true));
         statsRow.addView(xpCol); wallet.addView(statsRow); gap(wallet, 16);
         View line = new View(this); line.setBackgroundColor(BORDER); wallet.addView(line, lp(-1, 1)); gap(wallet, 12);
-        LinearLayout bottom = row(); bottom.addView(text("◷  Серия тренировок", 12, MUTED, false), new LinearLayout.LayoutParams(0, -2, 1));
-        bottom.addView(text(trades + " сделок", 12, TEXT, true)); wallet.addView(bottom); c.addView(wallet);
+        LinearLayout bottom = row(); bottom.addView(text("ЗАВЕРШЕНО СДЕЛОК", 10, MUTED, true), new LinearLayout.LayoutParams(0, -2, 1));
+        bottom.addView(text(String.valueOf(trades), 13, TEXT, true)); wallet.addView(bottom); c.addView(wallet);
         gap(c, 24);
         LinearLayout quick=row();
         LinearLayout practiceTile=card();practiceTile.addView(text("ПРАКТИКА",10,GREEN,true));gap(practiceTile,8);practiceTile.addView(text("Исторические сделки",15,TEXT,true));gap(practiceTile,4);practiceTile.addView(text("Работа с реальными свечами",11,MUTED,false));practiceTile.setOnClickListener(v->showPractice());quick.addView(practiceTile,new LinearLayout.LayoutParams(0,dp(154),1));
         LinearLayout calendarTile=card();calendarTile.addView(text("КАЛЕНДАРЬ",10,GREEN,true));gap(calendarTile,8);calendarTile.addView(text("Мои сделки",15,TEXT,true));gap(calendarTile,4);calendarTile.addView(text("Автоматический P&L",11,MUTED,false));calendarTile.setOnClickListener(v->showCalendar());LinearLayout.LayoutParams calp=new LinearLayout.LayoutParams(0,-2,1);calp.leftMargin=dp(8);calp.height=dp(154);quick.addView(calendarTile,calp);c.addView(quick);
+        gap(c,20);
+        int streakDays=prefs.getInt("streak_days",0);
+        LinearLayout streakCard=card();LinearLayout streakRow=row();FlameView flame=new FlameView(this,streakDays);streakRow.addView(flame,lp(42,48));LinearLayout streakCopy=column();streakCopy.addView(text("СЕРИЯ ДНЕЙ",10,MUTED,true));gap(streakCopy,3);streakCopy.addView(text(streakDays+" "+dayWord(streakDays)+" подряд",19,streakColor(streakDays),true));streakRow.addView(streakCopy,new LinearLayout.LayoutParams(0,-2,1));streakRow.addView(text(streakDays>=30?"Легенда":streakDays>=14?"В огне":streakDays>=7?"Отличный темп":"Продолжай",10,MUTED,false));streakCard.addView(streakRow);gap(streakCard,5);streakCard.addView(text("Заходи каждый день, чтобы сохранить серию. Новый день засчитывается по местному времени устройства.",10,MUTED,false));c.addView(streakCard);
         gap(c,24);
         LinearLayout section = row(); section.addView(text("ТВОЙ ПУТЬ", 11, MUTED, true), new LinearLayout.LayoutParams(0, -2, 1));
         TextView all = text("Все уроки", 12, GREEN, true); section.addView(all); all.setOnClickListener(v -> showLessons()); c.addView(section);
         gap(c, 12);
-        addLessonRow(c, "01", "Как читать свечи", "Тело, тени и движение цены", true, 1);
-        addLessonRow(c, "02", "LONG и SHORT", "Два направления сделки", true, 2);
-        addLessonRow(c, "03", "Риск и плечо", "Размер позиции без эмоций", false, 3);
-        addLessonRow(c, "04", "Историческая практика", "Только настоящие свечи биржи", false, 4);
+        String[][] homeLessons=lessonCatalog();
+        for(int i=0;i<Math.min(4,homeLessons.length);i++)addLessonRow(c,String.format(Locale.US,"%02d",i+1),homeLessons[i][1],homeLessons[i][2],prefs.getBoolean("lesson_done_"+i,false),i);
         addBottomNav(0);
     }
 
     private void addLessonRow(LinearLayout parent, String num, String title, String sub, boolean done, int idx) {
-        LinearLayout item = row(); item.setBackground(shape(PANEL, 17, BORDER, 1)); pad(item, 13, 13, 13, 13);
-        TextView n = text(done ? "✓" : num, 14, done ? Color.rgb(12,20,10) : GREEN, true); n.setGravity(Gravity.CENTER);
-        n.setBackground(shape(done?GREEN:PANEL2, 13, done?GREEN:BORDER, 1)); item.addView(n, lp(38,38));
-        LinearLayout copy = column(); copy.setPadding(dp(11),0,0,0); copy.addView(text(title, 14, TEXT, true)); gap(copy,4); copy.addView(text(sub, 11, MUTED, false));
-        item.addView(copy, new LinearLayout.LayoutParams(0,-2,1)); item.addView(text("›",26,MUTED,false));
-        LinearLayout.LayoutParams p = lp(-1, 68); p.bottomMargin=dp(9); parent.addView(item,p); item.setOnClickListener(v -> showLessons());
+        LinearLayout item=row();item.setBackground(shape(done?Color.rgb(20,39,29):PANEL,17,done?Color.rgb(66,112,78):BORDER,1));pad(item,13,13,13,13);
+        TextView n=text(num,14,done?GREEN:MUTED,true);n.setGravity(Gravity.CENTER);n.setBackground(shape(done?Color.rgb(29,57,39):PANEL2,13,done?Color.rgb(66,112,78):BORDER,1));item.addView(n,lp(38,38));
+        LinearLayout copy=column();copy.setPadding(dp(11),0,0,0);copy.addView(text(title,14,TEXT,true));gap(copy,4);copy.addView(text(sub,11,MUTED,false));
+        item.addView(copy,new LinearLayout.LayoutParams(0,-2,1));item.addView(text(done?"ПРОЙДЕН":"ОТКРЫТЬ",9,done?GREEN:MUTED,true));
+        LinearLayout.LayoutParams p=lp(-1,68);p.bottomMargin=dp(9);parent.addView(item,p);item.setOnClickListener(v->showLessonDetail(idx));
     }
 
     private void showPractice() {
@@ -606,8 +612,9 @@ public class MainActivity extends Activity {
         c.addView(text("От первых свечей до уверенного риск-менеджмента — шаг за шагом.",14,MUTED,false));gap(c,16);
         String[][] lessons=lessonCatalog();
         for(int i=0;i<lessons.length;i++){
-            LinearLayout l=card();l.addView(text(lessons[i][0],10,GREEN,true));gap(l,8);l.addView(text(lessons[i][1],17,TEXT,true));gap(l,4);l.addView(text(lessons[i][2],12,MUTED,false));gap(l,12);
-            final int idx=i;addButton(l,"Открыть урок",true,v->showLessonDetail(idx));
+            boolean done=prefs.getBoolean("lesson_done_"+i,false);
+            LinearLayout l=card();l.setBackground(shape(done?Color.rgb(20,39,29):PANEL,16,done?Color.rgb(66,112,78):BORDER,1));l.addView(text(String.format(Locale.US,"%02d · %s",i+1,lessons[i][0]),10,GREEN,true));gap(l,8);l.addView(text(lessons[i][1],17,TEXT,true));gap(l,4);l.addView(text(lessons[i][2],12,MUTED,false));gap(l,12);
+            final int idx=i;addButton(l,done?"Прочитано ✓ · Открыть снова":"Открыть урок",true,v->showLessonDetail(idx));
             LinearLayout.LayoutParams p=lp(-1,-2);p.bottomMargin=dp(10);c.addView(l,p);
         }
         addBottomNav(0);
@@ -621,8 +628,12 @@ public class MainActivity extends Activity {
         c.addView(text("Создай профиль, чтобы сохранять прогресс и историю сделок на этом устройстве.",14,MUTED,false));gap(c,20);
         LinearLayout box=card();box.addView(text("ИМЯ ИЛИ НИКНЕЙМ",10,GREEN,true));gap(box,8);EditText name=textInput("");name.setHint("Как к тебе обращаться?");box.addView(name,lp(-1,50));gap(box,12);
         box.addView(text("ПОЧТА · НЕОБЯЗАТЕЛЬНО",10,MUTED,true));gap(box,8);EditText email=textInput("");email.setHint("name@example.com");email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);box.addView(email,lp(-1,50));c.addView(box);gap(c,16);
-        addButton(c,"Продолжить",true,v->{String n=name.getText().toString().trim();if(n.length()<2){toast("Введи имя или никнейм (минимум 2 символа)");return;}prefs.edit().putString("profile_name",n).putString("profile_email",email.getText().toString().trim()).apply();showHome();});
-        c.addView(text("Это локальный профиль без облачной регистрации. Данные хранятся на устройстве.",11,MUTED,false));
+        CheckBox terms=new CheckBox(this);terms.setText("Принимаю пользовательское соглашение");terms.setTextColor(TEXT);terms.setButtonTintList(ColorStateList.valueOf(GREEN));terms.setTextSize(12);box.addView(terms);
+        CheckBox privacy=new CheckBox(this);privacy.setText("Согласен с политикой конфиденциальности");privacy.setTextColor(TEXT);privacy.setButtonTintList(ColorStateList.valueOf(GREEN));privacy.setTextSize(12);box.addView(privacy);
+        if("2026-11-17".equals(prefs.getString("legal_accepted_version",""))){terms.setChecked(true);privacy.setChecked(true);}
+        TextView docs=text("Прочитать пользовательское соглашение и политику конфиденциальности",11,GREEN,true);docs.setGravity(Gravity.CENTER);box.addView(docs);docs.setOnClickListener(v->showLegalDocuments());
+        addButton(c,"Продолжить",true,v->{String n=name.getText().toString().trim();if(n.length()<2){toast("Введи имя или никнейм (минимум 2 символа)");return;}if(!terms.isChecked()||!privacy.isChecked()){toast("Для продолжения нужно принять оба документа");return;}prefs.edit().putString("profile_name",n).putString("profile_email",email.getText().toString().trim()).putString("legal_accepted_version","2026-11-17").apply();updateDailyStreak();showHome();});
+        c.addView(text("Это локальный профиль без облачной регистрации. Имя, почта и прогресс остаются в приложении на устройстве.",11,MUTED,false));
     }
 
     private String[][] lessonCatalog(){ return LessonCatalog.all(); }
@@ -631,7 +642,7 @@ public class MainActivity extends Activity {
         String[][] data=lessonCatalog();if(index<0||index>=data.length)return;page=7;beginPage("Урок "+(index+1)+" / "+data.length,true);
         ScrollView sv=scroll(root);LinearLayout c=content(sv);LinearLayout hero=card();hero.addView(text(data[index][0],10,GREEN,true));gap(hero,8);hero.addView(text(data[index][1],24,TEXT,true));gap(hero,12);hero.addView(text(data[index][2],15,MUTED,false));c.addView(hero);gap(c,12);
         LinearLayout note=card();note.addView(text("ПРАКТИЧЕСКИЙ ВЫВОД",10,GREEN,true));gap(note,8);note.addView(text(data[index].length>3?data[index][3]:"Перед каждой сделкой определи сценарий, точку отмены и максимальный допустимый убыток. Не принимай решение только по одному индикатору.",13,TEXT,false));c.addView(note);gap(c,12);
-        boolean done=prefs.getBoolean("lesson_done_"+index,false);addButton(c,done?"Урок пройден ✓":"Отметить урок пройденным · +25 XP",true,v->{if(!prefs.getBoolean("lesson_done_"+index,false)){xp+=25;prefs.edit().putBoolean("lesson_done_"+index,true).apply();persist();}showLessonDetail(index);});
+        boolean done=prefs.getBoolean("lesson_done_"+index,false);addButton(c,done?"Урок пройден ✓":"Завершить чтение · +25 XP",true,v->{if(!prefs.getBoolean("lesson_done_"+index,false)){xp+=25;prefs.edit().putBoolean("lesson_done_"+index,true).apply();persist();}showLessonDetail(index);});
         if(index<data.length-1)addButton(c,"Следующий урок",false,v->showLessonDetail(index+1));else addButton(c,"Перейти к практике",false,v->showPractice());addBottomNav(0);
     }
 
@@ -656,8 +667,41 @@ public class MainActivity extends Activity {
         addProfileButton(c,"Календарь сделок",v->showCalendar());
         addProfileButton(c,"Мой прогресс",v->showStats());
         addProfileButton(c,"Карта обучения",v->showLessons());
+        addProfileButton(c,"Документы и конфиденциальность",v->showLegalDocuments());
         addProfileButton(c,"Изменить имя",v->{EditText e=textInput(name);new android.app.AlertDialog.Builder(this).setTitle("Имя профиля").setView(e).setNegativeButton("Отмена",null).setPositiveButton("Сохранить",(d,w)->{String n=e.getText().toString().trim();if(n.length()>1){prefs.edit().putString("profile_name",n).apply();showProfile();}}).show();});
-        addProfileButton(c,"Выйти из профиля",v->new android.app.AlertDialog.Builder(this).setTitle("Выйти?").setMessage("Локальная история и прогресс сохранятся на устройстве.").setNegativeButton("Отмена",null).setPositiveButton("Выйти",(d,w)->{prefs.edit().remove("profile_name").remove("profile_email").apply();showWelcome();}).show());addBottomNav(3);
+        addProfileButton(c,"Выйти из профиля",v->new android.app.AlertDialog.Builder(this).setTitle("Выйти?").setMessage("Локальная история и прогресс сохранятся на устройстве.").setNegativeButton("Отмена",null).setPositiveButton("Выйти",(d,w)->{prefs.edit().remove("profile_name").remove("profile_email").apply();showWelcome();}).show());
+        addProfileButton(c,"Удалить все локальные данные",v->new android.app.AlertDialog.Builder(this).setTitle("Удалить данные?").setMessage("Будут удалены профиль, сделки, баланс, серия и обучение с этого устройства. Действие нельзя отменить.").setNegativeButton("Отмена",null).setPositiveButton("Удалить",(d,w)->{prefs.edit().clear().apply();balance=10000;xp=trades=wins=0;netPnl=0;tradeHistory.clear();updateDailyStreak();showWelcome();}).show());addBottomNav(3);
+    }
+
+
+    private void updateDailyStreak(){
+        String today=new SimpleDateFormat("yyyyMMdd",Locale.US).format(new Date());
+        String last=prefs.getString("streak_last_date","");
+        if(today.equals(last))return;
+        int streak=prefs.getInt("streak_days",0);
+        try{
+            java.time.LocalDate now=java.time.LocalDate.parse(today,java.time.format.DateTimeFormatter.BASIC_ISO_DATE);
+            java.time.LocalDate previous=java.time.LocalDate.parse(last,java.time.format.DateTimeFormatter.BASIC_ISO_DATE);
+            streak=previous.plusDays(1).equals(now)?streak+1:1;
+        }catch(Exception e){streak=1;}
+        prefs.edit().putInt("streak_days",streak).putString("streak_last_date",today).apply();
+    }
+    private String dayWord(int n){int x=n%100;if(x>=11&&x<=14)return "дней";x=n%10;return x==1?"день":(x>=2&&x<=4?"дня":"дней");}
+    private int streakColor(int n){if(n>=100)return Color.rgb(255,204,82);if(n>=60)return Color.rgb(52,211,211);if(n>=30)return Color.rgb(168,85,247);if(n>=14)return Color.rgb(65,145,255);if(n>=7)return Color.rgb(239,68,68);if(n>=3)return Color.rgb(255,126,54);return Color.rgb(255,196,74);}
+    private void showLegalDocuments(){
+        page=10;beginPage("Документы",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);
+        addButton(c,"Политика конфиденциальности",false,v->showLegalText("Политика конфиденциальности",privacyPolicyText()));
+        addButton(c,"Пользовательское соглашение",false,v->showLegalText("Пользовательское соглашение",termsText()));
+        c.addView(text("Документы подготовлены для текущей версии локального тренажёра. Перед публичным коммерческим запуском их следует проверить с юристом с учётом страны оператора и аудитории.",11,MUTED,false));addBottomNav(3);
+    }
+    private void showLegalText(String title,String body){
+        new android.app.AlertDialog.Builder(this).setTitle(title).setMessage(body).setPositiveButton("Закрыть",null).show();
+    }
+    private String privacyPolicyText(){
+        return "ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ\\nВерсия от 17 ноября 2026 года\\n\\n1. Кто обрабатывает данные\\nTradeQuest в текущей версии — локальное приложение-тренажёр без учётной записи на сервере. Оператором приложения является лицо, распространяющее эту сборку. Контакт для вопросов о данных: укажите действующий адрес электронной почты оператора до публичного релиза.\\n\\n2. Какие данные используются\\nВы можете указать имя или псевдоним; адрес электронной почты необязателен. Приложение сохраняет на устройстве виртуальный баланс, результаты тренировок, историю сделок, опыт, отметки об уроках и серию ежедневных входов. Пароли и платёжные данные не запрашиваются.\\n\\n3. Где хранятся данные\\nПрофиль и прогресс хранятся локально в приватном хранилище приложения на вашем Android-устройстве. В этой версии нет регистрации на сервере, облачной синхронизации, рекламных SDK и встроенной аналитики. Удалить данные можно в профиле кнопкой «Удалить все локальные данные» либо очистив данные приложения/удалив приложение в настройках Android.\\n\\n4. Сетевые запросы\\nДля загрузки исторических рыночных свечей приложение обращается к публичному API Bybit. Запрос содержит выбранный торговый инструмент и интервал. Bybit и сетевые провайдеры могут получать технические данные соединения, например IP-адрес, в соответствии со своими документами и правилами. Приложение не отправляет Bybit ваше имя, почту, журнал тренировок или ключи биржи. Ознакомьтесь с политикой Bybit на официальном сайте провайдера.\\n\\n5. Цели и основания\\nЛокальные данные используются для отображения профиля, сохранения обучения и расчёта результатов симуляции. Имя и необязательная почта сохраняются по вашему выбору; согласие с этой политикой подтверждается при создании локального профиля.\\n\\n6. Передача и безопасность\\nTradeQuest не передаёт профиль и тренировочную историю на собственный сервер, поскольку такой сервер в этой версии отсутствует. Защищайте устройство блокировкой экрана и не предоставляйте доступ к нему посторонним.\\n\\n7. Права пользователя\\nВы можете не указывать почту, изменить имя или удалить локальные данные средствами приложения. Поскольку данные не поступают оператору на сервер, оператор не может восстановить удалённую локальную историю.\\n\\n8. Дети\\nПриложение предназначено для самостоятельного использования совершеннолетними пользователями. Если в вашей стране применяются иные возрастные требования, соблюдайте их.\\n\\n9. Изменения и контакт\\nПри существенном изменении обработки данных текст политики будет обновлён в приложении. До публикации укажите реальное имя/наименование оператора, контактный email и применимое право. Эта заготовка не заменяет юридическую проверку.";
+    }
+    private String termsText(){
+        return "ПОЛЬЗОВАТЕЛЬСКОЕ СОГЛАШЕНИЕ\\nВерсия от 17 ноября 2026 года\\n\\n1. Назначение\\nTradeQuest — учебный симулятор для изучения рыночных графиков и тренировки торговых решений на исторических данных. Приложение не является брокером, биржей, инвестиционной платформой или сервисом исполнения ордеров.\\n\\n2. Нет финансовой рекомендации\\nМатериалы, индикаторы, графики и результаты симуляций предоставляются исключительно в образовательных целях. Они не являются индивидуальной инвестиционной рекомендацией, предложением купить или продать актив либо обещанием доходности. Вы самостоятельно принимаете финансовые решения и несёте связанные с ними риски.\\n\\n3. Виртуальные сделки\\nБаланс и сделки внутри приложения виртуальные. Приложение не принимает депозиты, не хранит деньги, не подключает торговый аккаунт и не размещает реальные ордера. Результат на исторических данных не гарантирует аналогичного результата в будущем.\\n\\n4. Исторические данные и ограничения модели\\nКотировки загружаются из публичного API Bybit и могут быть неполными, задержанными или изменёнными поставщиком. Расчёты используют свечные OHLC-данные и упрощённые правила исполнения. Комиссии, funding, проскальзывание, частичное исполнение и точная ликвидация могут не моделироваться. Если TP и SL попадают в диапазон одной свечи, внутрисвечной порядок нельзя достоверно установить; тренажёр применяет консервативное правило, описанное в интерфейсе.\\n\\n5. Ответственность пользователя\\nНе используйте виртуальный результат как единственное основание для реальной сделки. Проверяйте данные, правила биржи, размер риска и собственную пригодность к финансовым операциям. Не пытайтесь обходить ограничения поставщиков данных или законодательства.\\n\\n6. Интеллектуальная собственность и сторонние сервисы\\nНазвание и элементы TradeQuest относятся к их правообладателям. Рыночные данные и API предоставляются Bybit на условиях соответствующего поставщика. Упоминание Bybit не означает одобрение или партнёрство.\\n\\n7. Доступность и изменения\\nПриложение предоставляется «как есть» для обучения. Возможны ошибки, перерывы API и изменения функциональности. В пределах, допускаемых применимым законодательством, оператор не гарантирует непрерывную работу или точность симуляции. Ничто в этом соглашении не ограничивает права потребителя, которые нельзя ограничить законом.\\n\\n8. Контакты и применимое право\\nДо публичного распространения оператор должен указать своё юридическое имя/наименование, адрес для юридически значимых сообщений, email и применимое право/порядок разрешения споров. Не публикуйте приложение с незаполненными реквизитами. Это проект текста, а не юридическое заключение.";
     }
 
     private void persist() {
@@ -675,6 +719,15 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() { super.onDestroy(); io.shutdownNow(); }
+
+
+    private class FlameView extends View{
+        private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);private final int days;
+        FlameView(Context context,int days){super(context);this.days=days;}
+        @Override protected void onDraw(Canvas canvas){super.onDraw(canvas);float w=getWidth(),h=getHeight();canvas.save();canvas.scale(w/48f,h/54f);
+            Path outer=new Path();outer.moveTo(24,2);outer.cubicTo(27,11,41,17,42,32);outer.cubicTo(43,45,35,52,24,52);outer.cubicTo(11,52,4,44,6,32);outer.cubicTo(7,23,14,17,17,10);outer.cubicTo(18,18,22,20,24,2);outer.close();paint.setColor(streakColor(days));paint.setStyle(Paint.Style.FILL);canvas.drawPath(outer,paint);
+            Path inner=new Path();inner.moveTo(25,25);inner.cubicTo(31,33,35,37,32,44);inner.cubicTo(29,50,18,49,15,43);inner.cubicTo(12,37,18,31,25,25);inner.close();paint.setColor(Color.rgb(255,226,160));canvas.drawPath(inner,paint);canvas.restore();}
+    }
 
     private class CandlestickChartView extends View {
         private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
