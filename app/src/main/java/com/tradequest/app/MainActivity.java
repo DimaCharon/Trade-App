@@ -283,7 +283,7 @@ public class MainActivity extends Activity {
         LinearLayout modeCard=card();modeCard.addView(text("Тип практики",12,TEXT,true));gap(modeCard,8);
         LinearLayout modeRow=row();TextView classic=button("Обычная сделка",!binaryMode),binary=button("Бинарная",binaryMode);
         modeRow.addView(classic,new LinearLayout.LayoutParams(0,dp(44),1));View modeGap=new View(this);modeRow.addView(modeGap,lp(8,1));modeRow.addView(binary,new LinearLayout.LayoutParams(0,dp(44),1));modeCard.addView(modeRow);
-        modeCard.addView(text(binaryMode?"Выбери направление и срок экспирации. Итог зависит от цены закрытия исторической свечи.":"LONG/SHORT с виртуальной маржой, плечом, TP и SL.",11,MUTED,false));
+        gap(modeCard,12);modeCard.addView(text(binaryMode?"Выбери направление и срок экспирации. Итог зависит от цены закрытия исторической свечи.":"LONG/SHORT с виртуальной маржой, плечом, TP и SL.",11,MUTED,false));
         classic.setOnClickListener(v->{if(binaryMode){binaryMode=false;invalidateScenario();showPractice();}});binary.setOnClickListener(v->{if(!binaryMode){binaryMode=true;invalidateScenario();showPractice();}});c.addView(modeCard);gap(c,16);
         LinearLayout chartCard = card();
         LinearLayout chartTop = row(); chartTop.addView(text("График", 10, MUTED, true),new LinearLayout.LayoutParams(0,-2,1));
@@ -715,7 +715,7 @@ public class MainActivity extends Activity {
     private String formatDate(long time) { return new SimpleDateFormat("dd.MM.yyyy · HH:mm",Locale.getDefault()).format(new Date(time)); }
 
     @Override public void onBackPressed() {
-        if(page==3||page==2)showPractice();else if(page==7)showLessons();else if(page==1||page==4||page==5||page==8||page==9)showHome();else super.onBackPressed();
+        if(page==3||page==2)showPractice();else if(page==7)showLessons();else if(page==10){if(prefs.getString("profile_name","").trim().isEmpty())showWelcome();else showProfile();}else if(page==1||page==4||page==5||page==8||page==9)showHome();else super.onBackPressed();
     }
 
     @Override protected void onDestroy() { super.onDestroy(); io.shutdownNow(); }
