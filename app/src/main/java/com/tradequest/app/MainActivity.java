@@ -218,10 +218,7 @@ public class MainActivity extends Activity {
     private void showHome() {
         page = 0; beginPage("TRADEQUEST", false);
         ScrollView s = scroll(root); LinearLayout c = content(s);
-        TextView eyebrow = text("ТВОЯ ТОРГОВАЯ ТРЕНИРОВКА", 10, GREEN, true); c.addView(eyebrow);
-        gap(c, 8);
-        TextView heading = text("Учись на рынке.\nНе рискуя деньгами.", 29, TEXT, true); heading.setLineSpacing(dp(3), 1f); c.addView(heading);
-        gap(c, 20);
+        gap(c, 6);
         LinearLayout wallet = card(); wallet.setBackground(shape(Color.rgb(21, 27, 31), 16, BORDER, 1));
         LinearLayout statsRow = row();
         LinearLayout balCol = column();
@@ -251,11 +248,11 @@ public class MainActivity extends Activity {
     }
 
     private void addLessonRow(LinearLayout parent, String num, String title, String sub, boolean done, int idx) {
-        LinearLayout item=row();item.setBackground(shape(done?Color.rgb(20,39,29):PANEL,17,done?Color.rgb(66,112,78):BORDER,1));pad(item,13,13,13,13);
-        TextView n=text(num,14,done?GREEN:MUTED,true);n.setGravity(Gravity.CENTER);n.setBackground(shape(done?Color.rgb(29,57,39):PANEL2,13,done?Color.rgb(66,112,78):BORDER,1));item.addView(n,lp(38,38));
-        LinearLayout copy=column();copy.setPadding(dp(11),0,0,0);copy.addView(text(title,14,TEXT,true));gap(copy,4);copy.addView(text(sub,11,MUTED,false));
-        item.addView(copy,new LinearLayout.LayoutParams(0,-2,1));item.addView(text(done?"ПРОЙДЕН":"ОТКРЫТЬ",9,done?GREEN:MUTED,true));
-        LinearLayout.LayoutParams p=lp(-1,68);p.bottomMargin=dp(9);parent.addView(item,p);item.setOnClickListener(v->showLessonDetail(idx));
+        LinearLayout item=row();item.setMinimumHeight(dp(76));item.setBackground(shape(done?Color.rgb(20,39,29):PANEL,17,done?Color.rgb(66,112,78):BORDER,1));pad(item,13,12,13,12);
+        TextView n=text(num,14,done?GREEN:MUTED,true);n.setGravity(Gravity.CENTER);n.setBackground(shape(done?Color.rgb(29,57,39):PANEL2,13,done?Color.rgb(66,112,78):BORDER,1));item.addView(n,lp(42,42));
+        LinearLayout copy=column();copy.setPadding(dp(12),dp(2),dp(6),dp(2));TextView titleView=text(title,14,TEXT,true);titleView.setMaxLines(3);titleView.setLineSpacing(dp(2),1f);copy.addView(titleView);gap(copy,5);TextView subView=text(sub,11,MUTED,false);subView.setMaxLines(5);subView.setLineSpacing(dp(2),1f);copy.addView(subView);
+        item.addView(copy,new LinearLayout.LayoutParams(0,-2,1));TextView status=text(done?"ПРОЙДЕН":"ОТКРЫТЬ",9,done?GREEN:MUTED,true);status.setGravity(Gravity.CENTER);status.setMaxWidth(dp(58));item.addView(status);
+        LinearLayout.LayoutParams p=lp(-1,-2);p.bottomMargin=dp(9);parent.addView(item,p);item.setOnClickListener(v->showLessonDetail(idx));
     }
 
     private void showPractice() {
@@ -343,14 +340,23 @@ public class MainActivity extends Activity {
         io.execute(() -> {
             try {
                 List<MarketData.Candle> loaded=requestedBinary?MarketData.loadBinaryHistory(requestedSymbol):MarketData.load(requestedSymbol,requestedInterval);
-                Random random=new Random();
                 int min=70;
                 int max=requestedBinary?loaded.size()-1442:loaded.size()-45;
-                if(max<min)throw new Exception("Недостаточно будущих минутных свечей для случайного момента");
-                int selected = min + random.nextInt(Math.max(1,max-min+1));
+                if(max<min)throw new Exception("Недостаточно будущих свечей для случайного момента");
+                String historyKey="recent_scenarios_"+requestedSymbol+"_"+requestedInterval+"_"+(requestedBinary?"binary":"classic");
+                JSONArray recent=new JSONArray(prefs.getString(historyKey,"[]"));
+                java.util.HashSet<Long> recentTimes=new java.util.HashSet<>();
+                for(int i=0;i<recent.length();i++)recentTimes.add(recent.optLong(i));
+                List<Integer> candidates=new ArrayList<>();
+                for(int i=min;i<=max;i++)if(!recentTimes.contains(loaded.get(i).time))candidates.add(i);
+                if(candidates.isEmpty()){recentTimes.clear();for(int i=min;i<=max;i++)candidates.add(i);}
+                Random random=new Random();int selected=candidates.get(random.nextInt(candidates.size()));long selectedTime=loaded.get(selected).time;
                 main.post(() -> {
                     loading=false;
                     if(!requestedSymbol.equals(symbol)||!requestedInterval.equals(interval)||requestedBinary!=binaryMode){if(page==1)loadScenario();return;}
+                    JSONArray history=new JSONArray();for(Long t:recentTimes)if(t!=selectedTime)history.put(t);history.put(selectedTime);
+                    while(history.length()>30){JSONArray trimmed=new JSONArray();for(int k=history.length()-30;k<history.length();k++)trimmed.put(history.optLong(k));history=trimmed;}
+                    prefs.edit().putString(historyKey,history.toString()).apply();
                     candles=loaded;pivot=selected;loadedBinaryHistory=requestedBinary;
                     if(practiceStatus!=null)practiceStatus.setText("Загружено "+loaded.size()+" "+(requestedBinary?"минутных":"исторических")+" свечей · "+formatDate(loaded.get(pivot).time)+" · Bybit API");
                     updatePracticeChart();
@@ -630,9 +636,8 @@ public class MainActivity extends Activity {
         box.addView(text("ПОЧТА · НЕОБЯЗАТЕЛЬНО",10,MUTED,true));gap(box,8);EditText email=textInput("");email.setHint("name@example.com");email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);box.addView(email,lp(-1,50));c.addView(box);gap(c,16);
         CheckBox terms=new CheckBox(this);terms.setText("Принимаю пользовательское соглашение");terms.setTextColor(TEXT);terms.setButtonTintList(ColorStateList.valueOf(GREEN));terms.setTextSize(12);box.addView(terms);
         CheckBox privacy=new CheckBox(this);privacy.setText("Согласен с политикой конфиденциальности");privacy.setTextColor(TEXT);privacy.setButtonTintList(ColorStateList.valueOf(GREEN));privacy.setTextSize(12);box.addView(privacy);
-        if("2026-11-17".equals(prefs.getString("legal_accepted_version",""))){terms.setChecked(true);privacy.setChecked(true);}
-        TextView docs=text("Прочитать пользовательское соглашение и политику конфиденциальности",11,GREEN,true);docs.setGravity(Gravity.CENTER);box.addView(docs);docs.setOnClickListener(v->showLegalDocuments());
-        addButton(c,"Продолжить",true,v->{String n=name.getText().toString().trim();if(n.length()<2){toast("Введи имя или никнейм (минимум 2 символа)");return;}if(!terms.isChecked()||!privacy.isChecked()){toast("Для продолжения нужно принять оба документа");return;}prefs.edit().putString("profile_name",n).putString("profile_email",email.getText().toString().trim()).putString("legal_accepted_version","2026-11-17").apply();updateDailyStreak();showHome();});
+        TextView docs=text("Прочитать пользовательское соглашение и политику конфиденциальности",11,GREEN,true);docs.setGravity(Gravity.CENTER);docs.setPadding(dp(8),dp(8),dp(8),dp(8));box.addView(docs);docs.setOnClickListener(v->showLegalDocuments());
+        addButton(c,"Продолжить",true,v->{String n=name.getText().toString().trim();String mail=email.getText().toString().trim();if(n.length()<2||n.length()>40){toast("Имя должно содержать от 2 до 40 символов");return;}if(mail.length()>120||(!mail.isEmpty()&&!android.util.Patterns.EMAIL_ADDRESS.matcher(mail).matches())){toast("Проверь адрес электронной почты");return;}if(!terms.isChecked()||!privacy.isChecked()){toast("Для продолжения нужно отдельно принять оба документа");return;}prefs.edit().putString("profile_name",n).putString("profile_email",mail).putString("legal_accepted_version","2026-11-18").putLong("legal_accepted_at",System.currentTimeMillis()).putBoolean("terms_accepted",true).putBoolean("privacy_accepted",true).apply();updateDailyStreak();showHome();});
         c.addView(text("Это локальный профиль без облачной регистрации. Имя, почта и прогресс остаются в приложении на устройстве.",11,MUTED,false));
     }
 
@@ -692,7 +697,8 @@ public class MainActivity extends Activity {
         page=10;beginPage("Документы",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);
         addButton(c,"Политика конфиденциальности",false,v->showLegalText("Политика конфиденциальности",privacyPolicyText()));
         addButton(c,"Пользовательское соглашение",false,v->showLegalText("Пользовательское соглашение",termsText()));
-        c.addView(text("Документы подготовлены для текущей версии локального тренажёра. Перед публичным коммерческим запуском их следует проверить с юристом с учётом страны оператора и аудитории.",11,MUTED,false));addBottomNav(3);
+        c.addView(text("Документы доступны для чтения. Вернись к регистрации кнопкой «Назад»; профиль не создаётся из этого раздела.",11,MUTED,false));
+        if(!prefs.getString("profile_name","").trim().isEmpty())addBottomNav(3);
     }
     private void showLegalText(String title,String body){
         new android.app.AlertDialog.Builder(this).setTitle(title).setMessage(body).setPositiveButton("Закрыть",null).show();
@@ -705,6 +711,7 @@ public class MainActivity extends Activity {
     }
 
     private void persist() {
+        while(tradeHistory.size()>1000)tradeHistory.remove(0);
         JSONArray a=new JSONArray();for(JSONObject t:tradeHistory)a.put(t);
         prefs.edit().putLong("balance",Double.doubleToLongBits(balance)).putInt("xp",xp).putInt("trades",trades).putInt("wins",wins).putLong("netPnl",Double.doubleToLongBits(netPnl)).putString("trade_history",a.toString()).apply();
     }
@@ -713,6 +720,7 @@ public class MainActivity extends Activity {
     private String safeMessage(Exception e) { String m=e.getMessage(); return m==null?"ошибка сети":m; }
     private String intervalLabel(String i) { if("D".equals(i))return "1D"; if("240".equals(i))return "4H"; if("60".equals(i))return "1H"; return i+"M"; }
     private String formatDate(long time) { return new SimpleDateFormat("dd.MM.yyyy · HH:mm",Locale.getDefault()).format(new Date(time)); }
+    private String formatChartPrice(double value){if(!Double.isFinite(value))return "—";int decimals=value>=1000?2:(value>=1?4:(value>=0.01?6:8));return String.format(Locale.US,"%."+decimals+"f",value);}
 
     @Override public void onBackPressed() {
         if(page==3||page==2)showPractice();else if(page==7)showLessons();else if(page==10){if(prefs.getString("profile_name","").trim().isEmpty())showWelcome();else showProfile();}else if(page==1||page==4||page==5||page==8||page==9)showHome();else super.onBackPressed();
@@ -747,7 +755,8 @@ public class MainActivity extends Activity {
         @Override protected void onDraw(Canvas canvas){
             super.onDraw(canvas);float w=getWidth(),h=getHeight();canvas.drawColor(PANEL);
             if(values.isEmpty()){label(canvas,emptyLabel.length()==0?"Нет исторических данных":emptyLabel,dp(12),h/2,TEXT,dp(12));return;}
-            int n=values.size();float left=dp(8),right=w-dp(8),top=dp(34),priceBottom=h-dp(34),volumeTop=h-dp(29),bottom=h-dp(5);
+            int n=values.size();float left=dp(10),axisLeft=w-dp(76),right=axisLeft-dp(8),top=dp(43),priceBottom=h-dp(35),volumeTop=h-dp(29),bottom=h-dp(5);
+            if(right<=left||priceBottom<=top)return;
             double min=Double.MAX_VALUE,max=-Double.MAX_VALUE,maxVol=0;
             for(MarketData.Candle c:values){min=Math.min(min,c.low);max=Math.max(max,c.high);maxVol=Math.max(maxVol,c.volume);}
             if(Double.isFinite(entry)){min=Math.min(min,entry);max=Math.max(max,entry);}
@@ -755,14 +764,18 @@ public class MainActivity extends Activity {
             if(Double.isFinite(sl)){min=Math.min(min,sl);max=Math.max(max,sl);}
             double range=max-min;if(range<=0)range=Math.max(max*.002,0.000001);double extra=range*.08;min-=extra;max+=extra;
             float plotH=priceBottom-top,plotW=right-left;
-            for(int i=0;i<4;i++){float y=top+plotH*i/3f;line(canvas,left,y,right,y,Color.rgb(43,48,56),dp(.6f));}
+            p.setColor(Color.rgb(16,19,25));canvas.drawRect(axisLeft,top,w,priceBottom,p);
+            for(int i=0;i<5;i++){float y=top+plotH*i/4f;line(canvas,left,y,right,y,Color.rgb(48,55,65),dp(.7f));String scale=formatChartPrice(max-(max-min)*i/4.0);p.setTextSize(dp(8));float tw=p.measureText(scale);label(canvas,scale,w-dp(6)-tw,y+dp(3),MUTED,dp(8));}
             float step=plotW/n,bodyW=Math.max(dp(1.5f),Math.min(dp(7),step*.58f));
             for(int i=0;i<n;i++){
                 MarketData.Candle c=values.get(i);float x=left+(i+.5f)*step;
                 float yO=map(c.open,min,max,top,priceBottom),yC=map(c.close,min,max,top,priceBottom),yH=map(c.high,min,max,top,priceBottom),yL=map(c.low,min,max,top,priceBottom);
                 int color=c.close>=c.open?Color.rgb(78,174,119):Color.rgb(207,86,91);
-                p.setColor(color);p.setStrokeWidth(dp(1));canvas.drawLine(x,yH,x,yL,p);
-                float y=Math.min(yO,yC),bh=Math.max(dp(1.5f),Math.abs(yC-yO));canvas.drawRect(x-bodyW/2,y,x+bodyW/2,y+bh,p);
+                p.setColor(color);p.setStrokeWidth(Math.max(dp(1),bodyW*.22f));p.setStyle(Paint.Style.STROKE);canvas.drawLine(x,yH,x,yL,p);p.setStyle(Paint.Style.FILL);
+                float y=Math.min(yO,yC),bh=Math.max(dp(2.4f),Math.abs(yC-yO));RectF body=new RectF(x-bodyW/2,y,x+bodyW/2,y+bh);
+                p.setColor(color);canvas.drawRoundRect(body,dp(1.2f),dp(1.2f),p);
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dp(.55f));p.setColor(Color.argb(210,245,250,250));canvas.drawRoundRect(body,dp(1.2f),dp(1.2f),p);p.setStyle(Paint.Style.FILL);
+                if(body.height()>dp(4)){p.setColor(Color.argb(55,255,255,255));canvas.drawLine(body.left+dp(1),body.top+dp(1),body.right-dp(1),body.top+dp(1),p);}
                 if(maxVol>0){float vh=(float)(c.volume/maxVol)*dp(20);p.setColor(Color.argb(100,color==Color.rgb(78,174,119)?78:207, color==Color.rgb(78,174,119)?174:86, color==Color.rgb(78,174,119)?119:91));canvas.drawRect(x-bodyW/2, bottom-vh,x+bodyW/2,bottom,p);}
             }
             drawAverage(canvas,20,Color.rgb(115,181,139),left,step,min,max,top,priceBottom);
@@ -779,6 +792,10 @@ public class MainActivity extends Activity {
             label(canvas,head,left,dp(12),TEXT,dp(8));
             String stats="EMA20 "+priceFmt.format(ema(n-1,20))+"   EMA50 "+priceFmt.format(ema(n-1,50))+"   RSI14 "+(Double.isNaN(rv)?"—":priceFmt.format(rv));
             label(canvas,stats,left,dp(25),MUTED,dp(8));
+            float closeY=map(last.close,min,max,top,priceBottom);int closeColor=last.close>=last.open?Color.rgb(91,211,151):Color.rgb(239,105,115);
+            p.setColor(Color.argb(175,Color.red(closeColor),Color.green(closeColor),Color.blue(closeColor)));p.setStrokeWidth(dp(1));p.setPathEffect(new android.graphics.DashPathEffect(new float[]{dp(3),dp(3)},0));canvas.drawLine(left,closeY,right,closeY,p);p.setPathEffect(null);
+            RectF closeTag=new RectF(axisLeft+dp(2),closeY-dp(10),w-dp(3),closeY+dp(10));p.setColor(closeColor);canvas.drawRoundRect(closeTag,dp(5),dp(5),p);
+            String closeText=formatChartPrice(last.close);p.setTextSize(dp(8));p.setTypeface(Typeface.DEFAULT_BOLD);float textWidth=p.measureText(closeText);label(canvas,closeText,closeTag.centerX()-textWidth/2,closeY+dp(3),BG,dp(8));
             label(canvas,"VOL",right-dp(25),bottom-dp(1),MUTED,dp(7));
         }
         private void drawAverage(Canvas canvas,int period,int color,float left,float step,double min,double max,float top,float bottom){

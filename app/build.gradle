@@ -10,9 +10,11 @@ android {
         applicationId 'com.tradequest.app'
         minSdk 28
         targetSdk 34
-        versionCode 3
-        versionName '1.2.0'
+        versionCode 4
+        versionName '1.3.0'
     }
+
+    testOptions { unitTests.returnDefaultValues = true }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -29,4 +31,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
 }

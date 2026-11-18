@@ -24,24 +24,51 @@ final class MarketData {
     }
 
     static List<Candle> load(String symbol,String interval) throws Exception {
-        List<Candle> data=loadPage(symbol,interval,null,1000);
-        removeUnclosed(data,intervalMillis(interval));
-        if(data.size()<100)throw new Exception("Недостаточно закрытых исторических свечей: "+data.size());
-        return data;
+        validateRequest(symbol,interval);
+        List<Candle> all=loadPages(symbol,interval,4);
+        removeUnclosed(all,intervalMillis(interval));
+        if(all.size()<100)throw new Exception("Недостаточно закрытых исторических свечей: "+all.size());
+        return all;
     }
 
-    // Two Bybit pages provide enough one-minute history for a 24-hour expiry plus context.
+    // Wider minute history gives thousands of distinct historical decision points.
     static List<Candle> loadBinaryHistory(String symbol) throws Exception {
-        List<Candle> newest=loadPage(symbol,"1",null,1000);
-        if(newest.isEmpty())throw new Exception("Bybit не вернул минутные свечи");
-        long end=newest.get(0).time-1;
-        List<Candle> older=loadPage(symbol,"1",end,1000);
-        List<Candle> all=new ArrayList<>(older);
-        all.addAll(newest);
-        Collections.sort(all,(a,b)->Long.compare(a.time,b.time));
+        validateRequest(symbol,"1");
+        List<Candle> all=loadPages(symbol,"1",5);
         removeUnclosed(all,60000L);
-        if(all.size()<1550)throw new Exception("Не удалось загрузить достаточно минутной истории для экспирации до 24 часов");
+        if(all.size()<3000)throw new Exception("Не удалось загрузить достаточно минутной истории для экспирации до 24 часов");
         return all;
+    }
+
+    private static void validateRequest(String symbol,String interval) {
+        if(symbol==null||!symbol.matches("[A-Z0-9]{2,20}"))throw new IllegalArgumentException("Некорректный торговый инструмент");
+        if(interval==null||!interval.matches("1|3|5|15|30|60|120|240|360|720|D|W|M"))throw new IllegalArgumentException("Некорректный таймфрейм");
+    }
+
+    private static List<Candle> loadPages(String symbol,String interval,int pages) throws Exception {
+        List<Candle> all=new ArrayList<>();
+        Long end=null;
+        for(int page=0;page<pages;page++){
+            List<Candle> batch=loadPage(symbol,interval,end,1000);
+            if(batch.isEmpty())break;
+            all.addAll(batch);
+            long oldest=batch.get(0).time;
+            if(end!=null&&oldest>=end)break;
+            end=oldest-1;
+            if(batch.size()<1000)break;
+        }
+        Collections.sort(all,(a,b)->Long.compare(a.time,b.time));
+        List<Candle> unique=new ArrayList<>();
+        long previous=Long.MIN_VALUE;
+        for(Candle candle:all){if(candle.time!=previous){unique.add(candle);previous=candle.time;}}
+        return unique;
+    }
+
+    static boolean isValidCandle(Candle c) {
+        return c!=null&&c.time>0&&Double.isFinite(c.open)&&Double.isFinite(c.high)
+                &&Double.isFinite(c.low)&&Double.isFinite(c.close)&&Double.isFinite(c.volume)
+                &&c.open>0&&c.high>0&&c.low>0&&c.close>0&&c.volume>=0
+                &&c.high>=Math.max(c.open,c.close)&&c.low<=Math.min(c.open,c.close)&&c.high>=c.low;
     }
 
     private static long intervalMillis(String interval) {
@@ -62,13 +89,15 @@ final class MarketData {
                 +"&interval="+interval+"&limit="+limit+(end==null?"":"&end="+end);
         HttpURLConnection connection=(HttpURLConnection)new URL(query).openConnection();
         connection.setRequestMethod("GET");connection.setConnectTimeout(10000);connection.setReadTimeout(15000);
-        connection.setRequestProperty("Accept","application/json");connection.setRequestProperty("User-Agent","TradeQuest-Android/1.0");
+        connection.setUseCaches(false);connection.setInstanceFollowRedirects(false);
+        connection.setRequestProperty("Accept","application/json");connection.setRequestProperty("User-Agent","TradeQuest-Android/1.2");
         try {
             int code=connection.getResponseCode();
             InputStream stream=code>=200&&code<300?connection.getInputStream():connection.getErrorStream();
+            if(stream==null)throw new Exception("Пустой ответ Bybit (HTTP "+code+")");
             StringBuilder body=new StringBuilder();
             try(BufferedReader reader=new BufferedReader(new InputStreamReader(stream,StandardCharsets.UTF_8))){
-                String line;while((line=reader.readLine())!=null)body.append(line);
+                String line;while((line=reader.readLine())!=null){body.append(line);if(body.length()>2_000_000)throw new Exception("Ответ API превышает допустимый размер");}
             }
             if(code<200||code>=300)throw new Exception("Bybit HTTP "+code);
             JSONObject root=new JSONObject(body.toString());
@@ -78,9 +107,12 @@ final class MarketData {
             List<Candle> candles=new ArrayList<>();
             for(int i=0;i<rows.length();i++){
                 JSONArray row=rows.getJSONArray(i);
-                candles.add(new Candle(Long.parseLong(row.getString(0)),Double.parseDouble(row.getString(1)),
-                        Double.parseDouble(row.getString(2)),Double.parseDouble(row.getString(3)),
-                        Double.parseDouble(row.getString(4)),Double.parseDouble(row.getString(5))));
+                try {
+                    Candle candle=new Candle(Long.parseLong(row.getString(0)),Double.parseDouble(row.getString(1)),
+                            Double.parseDouble(row.getString(2)),Double.parseDouble(row.getString(3)),
+                            Double.parseDouble(row.getString(4)),Double.parseDouble(row.getString(5)));
+                    if(isValidCandle(candle))candles.add(candle);
+                } catch(RuntimeException ignored) { /* Skip malformed provider rows. */ }
             }
             Collections.sort(candles,(a,b)->Long.compare(a.time,b.time));
             return candles;
