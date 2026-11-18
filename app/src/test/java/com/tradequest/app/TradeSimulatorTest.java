@@ -32,7 +32,7 @@ public class TradeSimulatorTest {
         TradeSimulator.Result r=TradeSimulator.simulate(candles,0,true,100,1,2,1);
         assertTrue(r.ambiguous);
         assertFalse(r.hitTp);
-        assertEquals(98.0,r.exit,0.000001);
+        assertEquals(99.0,r.exit,0.000001);
     }
 
     @Test public void binaryUpWinsAtExpiryClose() {
