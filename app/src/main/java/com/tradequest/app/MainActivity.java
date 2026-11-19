@@ -729,7 +729,7 @@ public class MainActivity extends Activity {
 
     private void showProfile(){
         page=9;beginPage("Личный кабинет",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);
-        String name=prefs.getString("profile_name","Трейдер").trim();if(name.isEmpty())name="Трейдер";
+        final String name=prefs.getString("profile_name","Трейдер").trim().isEmpty()?"Трейдер":prefs.getString("profile_name","Трейдер").trim();
         LinearLayout hero=card();hero.setBackground(shape(Color.rgb(20,27,31),20,Color.rgb(52,67,60),1));
         LinearLayout heroTop=row();
         TextView avatar=text(name.substring(0,1).toUpperCase(Locale.getDefault()),27,BG,true);avatar.setGravity(Gravity.CENTER);avatar.setBackground(shape(GREEN,19,GREEN,0));heroTop.addView(avatar,lp(58,58));
