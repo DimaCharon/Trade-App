@@ -162,8 +162,70 @@ public class MainActivity extends Activity {
         b.setOnClickListener(v->{v.animate().scaleX(.985f).scaleY(.985f).setDuration(70).withEndAction(()->v.animate().scaleX(1f).scaleY(1f).setDuration(100).start()).start();listener.onClick(v);});
     }
 
-    private void addProfileButton(LinearLayout parent,String label,View.OnClickListener listener){
-        TextView b=button(label,false);b.setGravity(Gravity.CENTER);LinearLayout.LayoutParams p=lp(-1,58);p.bottomMargin=dp(12);parent.addView(b,p);b.setOnClickListener(listener);
+    private void addProfileAction(LinearLayout parent,String glyph,String title,String subtitle,boolean danger,View.OnClickListener listener){
+        LinearLayout item=row();
+        int cardColor=danger?Color.rgb(27,22,27):PANEL;
+        int strokeColor=danger?Color.rgb(92,49,58):BORDER;
+        item.setBackground(new android.graphics.drawable.RippleDrawable(
+                ColorStateList.valueOf(Color.argb(28,255,255,255)),shape(cardColor,17,strokeColor,1),null));
+        pad(item,13,12,13,12);
+        TextView icon=text(glyph,21,danger?Color.rgb(255,143,151):GREEN,true);icon.setGravity(Gravity.CENTER);
+        icon.setBackground(shape(danger?Color.rgb(48,29,36):PANEL2,14,danger?Color.rgb(83,48,57):BORDER,1));
+        item.addView(icon,lp(44,44));
+        LinearLayout copy=column();copy.setPadding(dp(12),dp(1),dp(6),dp(1));
+        TextView titleView=text(title,14,danger?Color.rgb(255,183,188):TEXT,true);titleView.setMaxLines(2);titleView.setLineSpacing(dp(2),1f);copy.addView(titleView);
+        gap(copy,4);TextView description=text(subtitle,11,MUTED,false);description.setMaxLines(2);description.setLineSpacing(dp(2),1f);copy.addView(description);
+        item.addView(copy,new LinearLayout.LayoutParams(0,-2,1));
+        TextView arrow=text("›",27,danger?Color.rgb(201,117,128):MUTED,false);arrow.setGravity(Gravity.CENTER);item.addView(arrow,lp(22,38));
+        LinearLayout.LayoutParams params=lp(-1,-2);params.bottomMargin=dp(8);parent.addView(item,params);
+        item.setClickable(true);item.setFocusable(true);
+        item.setOnClickListener(v->{v.animate().scaleX(.99f).scaleY(.99f).setDuration(70).withEndAction(()->v.animate().scaleX(1f).scaleY(1f).setDuration(100).start()).start();listener.onClick(v);});
+    }
+
+    private void addProfileSectionTitle(LinearLayout parent,String value){
+        TextView heading=text(value,10,MUTED,true);heading.setLetterSpacing(.10f);pad(heading,2,0,2,0);
+        LinearLayout.LayoutParams p=lp(-1,28);p.topMargin=dp(8);p.bottomMargin=dp(5);parent.addView(heading,p);
+    }
+
+    private void showActionSheet(String title,String subtitle,String glyph,boolean destructive,String confirmLabel,View extraContent,Runnable onConfirm){
+        android.app.Dialog dialog=new android.app.Dialog(this);
+        LinearLayout shell=column();pad(shell,18,0,18,dp(18));
+        LinearLayout sheet=column();sheet.setBackground(shape(PANEL,24,BORDER,1));pad(sheet,18,10,18,18);
+        View handle=new View(this);handle.setBackground(shape(Color.rgb(75,82,93),3,Color.TRANSPARENT,0));
+        LinearLayout handleRow=row();handleRow.setGravity(Gravity.CENTER);handleRow.addView(handle,lp(38,4));sheet.addView(handleRow,lp(-1,18));
+        LinearLayout header=row();
+        TextView icon=text(glyph,22,destructive?Color.rgb(255,145,153):GREEN,true);icon.setGravity(Gravity.CENTER);
+        icon.setBackground(shape(destructive?Color.rgb(51,29,36):PANEL2,15,destructive?Color.rgb(91,49,58):BORDER,1));header.addView(icon,lp(48,48));
+        LinearLayout copy=column();copy.setPadding(dp(12),0,0,0);copy.addView(text(title,18,TEXT,true));gap(copy,4);
+        TextView note=text(subtitle,12,MUTED,false);note.setLineSpacing(dp(2),1f);copy.addView(note);
+        header.addView(copy,new LinearLayout.LayoutParams(0,-2,1));sheet.addView(header);
+        if(extraContent!=null){gap(sheet,16);sheet.addView(extraContent);}
+        gap(sheet,18);LinearLayout actions=row();
+        TextView cancel=button("Отмена",false);cancel.setMinHeight(dp(50));
+        TextView confirm=button(confirmLabel,!destructive);confirm.setMinHeight(dp(50));
+        if(destructive){confirm.setBackground(ripple(Color.rgb(91,39,48),16));confirm.setTextColor(Color.rgb(255,210,213));}
+        actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(50),1));
+        View space=new View(this);actions.addView(space,lp(10,1));
+        actions.addView(confirm,new LinearLayout.LayoutParams(0,dp(50),1));sheet.addView(actions);
+        shell.addView(sheet,new LinearLayout.LayoutParams(-1,-2));dialog.setContentView(shell);
+        Window window=dialog.getWindow();
+        if(window!=null){window.setBackgroundDrawableResource(android.R.color.transparent);window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams attributes=window.getAttributes();attributes.dimAmount=.72f;attributes.gravity=Gravity.BOTTOM;window.setAttributes(attributes);
+            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.WRAP_CONTENT);window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);}
+        cancel.setOnClickListener(v->dialog.dismiss());confirm.setOnClickListener(v->{dialog.dismiss();if(onConfirm!=null)onConfirm.run();});
+        dialog.setCanceledOnTouchOutside(true);dialog.show();
+        if(window!=null)window.setLayout(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.WRAP_CONTENT);
+    }
+
+    private void showEditNameSheet(String currentName){
+        EditText field=textInput(currentName);field.setHint("Твоё имя или никнейм");
+        field.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(40)});
+        field.setSingleLine(true);field.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
+        showActionSheet("Изменить имя","Имя отображается в профиле и внутри твоего TradeQuest.","✎",false,"Сохранить",field,()->{
+            String value=field.getText().toString().trim();
+            if(value.length()<2){toast("Имя должно содержать минимум 2 символа");return;}
+            prefs.edit().putString("profile_name",value).apply();showProfile();
+        });
     }
 
     private void beginPage(String title, boolean back) {
@@ -666,16 +728,37 @@ public class MainActivity extends Activity {
     }
 
     private void showProfile(){
-        page=9;beginPage("Личный кабинет",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);String name=prefs.getString("profile_name","Трейдер");
-        LinearLayout hero=card();TextView avatar=text(name.substring(0,1).toUpperCase(Locale.getDefault()),28,BG,true);avatar.setGravity(Gravity.CENTER);avatar.setBackground(shape(GREEN,28,GREEN,0));hero.addView(avatar,lp(58,58));gap(hero,8);hero.addView(text(name,23,TEXT,true));gap(hero,4);hero.addView(text(prefs.getString("profile_email","Локальный профиль"),12,MUTED,false));gap(hero,8);hero.addView(text("Уровень "+(xp/500+1)+" · "+xp+" XP",13,GREEN,true));c.addView(hero);gap(c,12);
-        LinearLayout metrics=row();addMetric(metrics,"СДЕЛОК",String.valueOf(trades));addMetric(metrics,"WIN RATE",trades==0?"—":priceFmt.format((double)wins/trades*100)+"%");c.addView(metrics);gap(c,12);
-        addProfileButton(c,"Календарь сделок",v->showCalendar());
-        addProfileButton(c,"Мой прогресс",v->showStats());
-        addProfileButton(c,"Карта обучения",v->showLessons());
-        addProfileButton(c,"Документы и конфиденциальность",v->showLegalDocuments());
-        addProfileButton(c,"Изменить имя",v->{EditText e=textInput(name);new android.app.AlertDialog.Builder(this).setTitle("Имя профиля").setView(e).setNegativeButton("Отмена",null).setPositiveButton("Сохранить",(d,w)->{String n=e.getText().toString().trim();if(n.length()>1){prefs.edit().putString("profile_name",n).apply();showProfile();}}).show();});
-        addProfileButton(c,"Выйти из профиля",v->new android.app.AlertDialog.Builder(this).setTitle("Выйти?").setMessage("Локальная история и прогресс сохранятся на устройстве.").setNegativeButton("Отмена",null).setPositiveButton("Выйти",(d,w)->{prefs.edit().remove("profile_name").remove("profile_email").apply();showWelcome();}).show());
-        addProfileButton(c,"Удалить все локальные данные",v->new android.app.AlertDialog.Builder(this).setTitle("Удалить данные?").setMessage("Будут удалены профиль, сделки, баланс, серия и обучение с этого устройства. Действие нельзя отменить.").setNegativeButton("Отмена",null).setPositiveButton("Удалить",(d,w)->{prefs.edit().clear().apply();balance=10000;xp=trades=wins=0;netPnl=0;tradeHistory.clear();showWelcome();}).show());addBottomNav(3);
+        page=9;beginPage("Личный кабинет",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);
+        String name=prefs.getString("profile_name","Трейдер").trim();if(name.isEmpty())name="Трейдер";
+        LinearLayout hero=card();hero.setBackground(shape(Color.rgb(20,27,31),20,Color.rgb(52,67,60),1));
+        LinearLayout heroTop=row();
+        TextView avatar=text(name.substring(0,1).toUpperCase(Locale.getDefault()),27,BG,true);avatar.setGravity(Gravity.CENTER);avatar.setBackground(shape(GREEN,19,GREEN,0));heroTop.addView(avatar,lp(58,58));
+        LinearLayout identity=column();identity.setPadding(dp(13),0,0,0);identity.addView(text(name,21,TEXT,true));gap(identity,5);
+        TextView email=text(prefs.getString("profile_email","Локальный профиль"),12,MUTED,false);email.setMaxLines(1);email.setEllipsize(android.text.TextUtils.TruncateAt.END);identity.addView(email);
+        heroTop.addView(identity,new LinearLayout.LayoutParams(0,-2,1));hero.addView(heroTop);gap(hero,15);
+        View separator=new View(this);separator.setBackgroundColor(BORDER);hero.addView(separator,lp(-1,1));gap(hero,12);
+        hero.addView(text("УРОВЕНЬ "+(xp/500+1)+"  ·  "+xp+" XP",11,GREEN,true));c.addView(hero);gap(c,12);
+        LinearLayout metrics=row();addMetric(metrics,"СДЕЛОК",String.valueOf(trades));addMetric(metrics,"WIN RATE",trades==0?"—":priceFmt.format((double)wins/trades*100)+"%");c.addView(metrics);gap(c,14);
+
+        addProfileSectionTitle(c,"МОЯ АКТИВНОСТЬ");
+        addProfileAction(c,"◷","Календарь сделок","История тренировок и результаты",false,v->showCalendar());
+        addProfileAction(c,"↗","Мой прогресс","Статистика, опыт и достижения",false,v->showStats());
+        addProfileAction(c,"▤","Карта обучения","Уроки и торговые основы",false,v->showLessons());
+
+        addProfileSectionTitle(c,"АККАУНТ");
+        addProfileAction(c,"§","Документы и конфиденциальность","Пользовательское соглашение и политика",false,v->showLegalDocuments());
+        addProfileAction(c,"✎","Изменить имя","Обновить отображаемое имя профиля",false,v->showEditNameSheet(name));
+
+        addProfileSectionTitle(c,"СЕАНС И ДАННЫЕ");
+        addProfileAction(c,"⇥","Выйти из профиля","Выйти, сохранив историю и прогресс",false,v->showActionSheet(
+                "Выйти из профиля?","Тренировки и история останутся на этом устройстве.","⇥",false,"Выйти",null,()->{
+                    prefs.edit().remove("profile_name").remove("profile_email").apply();showWelcome();
+                }));
+        addProfileAction(c,"⌫","Удалить все локальные данные","Безвозвратно удалить профиль, сделки и обучение",true,v->showActionSheet(
+                "Удалить все данные?","Баланс, история сделок, серия дней и пройденные уроки будут удалены без возможности восстановления.","⌫",true,"Удалить всё",null,()->{
+                    prefs.edit().clear().apply();balance=10000;xp=trades=wins=0;netPnl=0;tradeHistory.clear();showWelcome();
+                }));
+        addBottomNav(3);
     }
 
 
@@ -695,13 +778,36 @@ public class MainActivity extends Activity {
     private int streakColor(int n){if(n>=100)return Color.rgb(255,204,82);if(n>=60)return Color.rgb(52,211,211);if(n>=30)return Color.rgb(168,85,247);if(n>=14)return Color.rgb(65,145,255);if(n>=7)return Color.rgb(239,68,68);if(n>=3)return Color.rgb(255,126,54);return Color.rgb(255,196,74);}
     private void showLegalDocuments(){
         page=10;beginPage("Документы",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);
-        addButton(c,"Политика конфиденциальности",false,v->showLegalText("Политика конфиденциальности",privacyPolicyText()));
-        addButton(c,"Пользовательское соглашение",false,v->showLegalText("Пользовательское соглашение",termsText()));
-        c.addView(text("Документы доступны для чтения. Вернись к регистрации кнопкой «Назад»; профиль не создаётся из этого раздела.",11,MUTED,false));
+        c.addView(text("ПРАВОВАЯ ИНФОРМАЦИЯ",10,GREEN,true));gap(c,5);
+        TextView intro=text("Прозрачные правила и информация о том, как работает TradeQuest.",14,MUTED,false);intro.setLineSpacing(dp(3),1f);c.addView(intro);gap(c,16);
+        addProfileAction(c,"§","Пользовательское соглашение","Назначение приложения, виртуальные сделки и ограничения",false,v->showLegalText("Пользовательское соглашение",termsText()));
+        addProfileAction(c,"◈","Политика конфиденциальности","Какие данные хранятся и как их удалить",false,v->showLegalText("Политика конфиденциальности",privacyPolicyText()));
+        LinearLayout info=card();info.setBackground(shape(PANEL2,16,BORDER,1));
+        info.addView(text("ЛОКАЛЬНОЕ ХРАНЕНИЕ",10,GREEN,true));gap(info,6);
+        TextView copy=text("Профиль и прогресс хранятся на этом устройстве. Чтение документов не создаёт аккаунт и не подтверждает согласие автоматически.",12,MUTED,false);copy.setLineSpacing(dp(3),1f);info.addView(copy);c.addView(info);
         if(!prefs.getString("profile_name","").trim().isEmpty())addBottomNav(3);
     }
     private void showLegalText(String title,String body){
-        new android.app.AlertDialog.Builder(this).setTitle(title).setMessage(body).setPositiveButton("Закрыть",null).show();
+        page=11;beginPage(title,true);ScrollView sv=scroll(root);LinearLayout c=content(sv);
+        String[] sections=body.split("\\n\\n");
+        String versionLine="";
+        if(sections.length>0){String[] coverLines=sections[0].split("\\n",2);if(coverLines.length>1)versionLine=coverLines[1].trim();}
+        LinearLayout cover=card();cover.setBackground(shape(Color.rgb(20,27,31),19,Color.rgb(52,67,60),1));
+        cover.addView(text("TRADEQUEST  ·  ДОКУМЕНТ",10,GREEN,true));gap(cover,9);
+        TextView docTitle=text(title,21,TEXT,true);docTitle.setLineSpacing(dp(3),1f);cover.addView(docTitle);gap(cover,6);
+        cover.addView(text(versionLine.isEmpty()?"Актуальная редакция документа":versionLine,11,MUTED,false));c.addView(cover);gap(c,12);
+        for(int i=1;i<sections.length;i++){
+            String block=sections[i].trim();if(block.isEmpty())continue;
+            String[] parts=block.split("\\n",2);
+            LinearLayout section=card();section.setBackground(shape(PANEL,16,BORDER,1));
+            TextView heading=text(parts[0].trim(),11,GREEN,true);heading.setLineSpacing(dp(2),1f);section.addView(heading);
+            if(parts.length>1){gap(section,8);TextView paragraph=text(parts[1].trim(),13,TEXT,false);paragraph.setLineSpacing(dp(4),1.08f);paragraph.setTextIsSelectable(true);section.addView(paragraph);}
+            c.addView(section);gap(c,8);
+        }
+        LinearLayout footer=column();pad(footer,20,8,20,12);
+        addButton(footer,"Понятно",true,v->{if(prefs.getString("profile_name","").trim().isEmpty())showWelcome();else showLegalDocuments();});
+        root.addView(footer);
+        if(!prefs.getString("profile_name","").trim().isEmpty())addBottomNav(3);
     }
     private String privacyPolicyText(){
         return "ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ\nВерсия от 17 ноября 2026 года\n\n1. Кто обрабатывает данные\nTradeQuest в текущей версии — локальное приложение-тренажёр без учётной записи на сервере. Оператором приложения является лицо, распространяющее эту сборку. Контакт для вопросов о данных: укажите действующий адрес электронной почты оператора до публичного релиза.\n\n2. Какие данные используются\nВы можете указать имя или псевдоним; адрес электронной почты необязателен. Приложение сохраняет на устройстве виртуальный баланс, результаты тренировок, историю сделок, опыт, отметки об уроках и серию ежедневных входов. Пароли и платёжные данные не запрашиваются.\n\n3. Где хранятся данные\nПрофиль и прогресс хранятся локально в приватном хранилище приложения на вашем Android-устройстве. В этой версии нет регистрации на сервере, облачной синхронизации, рекламных SDK и встроенной аналитики. Удалить данные можно в профиле кнопкой «Удалить все локальные данные» либо очистив данные приложения/удалив приложение в настройках Android.\n\n4. Сетевые запросы\nДля загрузки исторических рыночных свечей приложение обращается к публичному API Bybit. Запрос содержит выбранный торговый инструмент и интервал. Bybit и сетевые провайдеры могут получать технические данные соединения, например IP-адрес, в соответствии со своими документами и правилами. Приложение не отправляет Bybit ваше имя, почту, журнал тренировок или ключи биржи. Ознакомьтесь с политикой Bybit на официальном сайте провайдера.\n\n5. Цели и основания\nЛокальные данные используются для отображения профиля, сохранения обучения и расчёта результатов симуляции. Имя и необязательная почта сохраняются по вашему выбору; согласие с этой политикой подтверждается при создании локального профиля.\n\n6. Передача и безопасность\nTradeQuest не передаёт профиль и тренировочную историю на собственный сервер, поскольку такой сервер в этой версии отсутствует. Защищайте устройство блокировкой экрана и не предоставляйте доступ к нему посторонним.\n\n7. Права пользователя\nВы можете не указывать почту, изменить имя или удалить локальные данные средствами приложения. Поскольку данные не поступают оператору на сервер, оператор не может восстановить удалённую локальную историю.\n\n8. Дети\nПриложение предназначено для самостоятельного использования совершеннолетними пользователями. Если в вашей стране применяются иные возрастные требования, соблюдайте их.\n\n9. Изменения и контакт\nПри существенном изменении обработки данных текст политики будет обновлён в приложении. До публикации укажите реальное имя/наименование оператора, контактный email и применимое право. Эта заготовка не заменяет юридическую проверку.";
@@ -723,7 +829,7 @@ public class MainActivity extends Activity {
     private String formatChartPrice(double value){if(!Double.isFinite(value))return "—";int decimals=value>=1000?2:(value>=1?4:(value>=0.01?6:8));return String.format(Locale.US,"%."+decimals+"f",value);}
 
     @Override public void onBackPressed() {
-        if(page==3||page==2)showPractice();else if(page==7)showLessons();else if(page==10){if(prefs.getString("profile_name","").trim().isEmpty())showWelcome();else showProfile();}else if(page==1||page==4||page==5||page==8||page==9)showHome();else super.onBackPressed();
+        if(page==11)showLegalDocuments();else if(page==3||page==2)showPractice();else if(page==7)showLessons();else if(page==10){if(prefs.getString("profile_name","").trim().isEmpty())showWelcome();else showProfile();}else if(page==1||page==4||page==5||page==8||page==9)showHome();else super.onBackPressed();
     }
 
     @Override protected void onDestroy() { super.onDestroy(); io.shutdownNow(); }
