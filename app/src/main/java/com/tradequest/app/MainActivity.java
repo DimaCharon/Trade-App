@@ -189,32 +189,119 @@ public class MainActivity extends Activity {
 
     private void showActionSheet(String title,String subtitle,String glyph,boolean destructive,String confirmLabel,View extraContent,Runnable onConfirm){
         android.app.Dialog dialog=new android.app.Dialog(this);
-        LinearLayout shell=column();pad(shell,18,0,18,dp(18));
-        LinearLayout sheet=column();sheet.setBackground(shape(PANEL,24,BORDER,1));pad(sheet,18,10,18,18);
-        View handle=new View(this);handle.setBackground(shape(Color.rgb(75,82,93),3,Color.TRANSPARENT,0));
-        LinearLayout handleRow=row();handleRow.setGravity(Gravity.CENTER);handleRow.addView(handle,lp(38,4));sheet.addView(handleRow,lp(-1,18));
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        // A fully custom TradeQuest surface: never fall back to the grey platform dialog.
+        LinearLayout shell=column();
+        shell.setGravity(Gravity.CENTER);
+        pad(shell,18,18,18,18);
+
+        LinearLayout sheet=column();
+        sheet.setBackground(shape(Color.rgb(17,20,26),24,destructive?Color.rgb(103,54,63):BORDER,1));
+        pad(sheet,20,18,20,18);
+        sheet.setAlpha(0f);
+        sheet.setScaleX(.96f);
+        sheet.setScaleY(.96f);
+        sheet.setTranslationY(dp(10));
+
+        LinearLayout accentRow=row();
+        accentRow.setGravity(Gravity.CENTER_VERTICAL);
+        View accent=new View(this);
+        accent.setBackground(shape(destructive?RED:GREEN,2,Color.TRANSPARENT,0));
+        accentRow.addView(accent,lp(34,3));
+        TextView brand=text("TRADEQUEST  /  ПРОФИЛЬ",9,MUTED,true);
+        brand.setLetterSpacing(.12f);
+        LinearLayout.LayoutParams brandLp=lp(-2,-2);
+        brandLp.leftMargin=dp(9);
+        accentRow.addView(brand,brandLp);
+        sheet.addView(accentRow);
+        gap(sheet,17);
+
         LinearLayout header=row();
-        TextView icon=text(glyph,22,destructive?Color.rgb(255,145,153):GREEN,true);icon.setGravity(Gravity.CENTER);
-        icon.setBackground(shape(destructive?Color.rgb(51,29,36):PANEL2,15,destructive?Color.rgb(91,49,58):BORDER,1));header.addView(icon,lp(48,48));
-        LinearLayout copy=column();copy.setPadding(dp(12),0,0,0);copy.addView(text(title,18,TEXT,true));gap(copy,4);
-        TextView note=text(subtitle,12,MUTED,false);note.setLineSpacing(dp(2),1f);copy.addView(note);
-        header.addView(copy,new LinearLayout.LayoutParams(0,-2,1));sheet.addView(header);
-        if(extraContent!=null){gap(sheet,16);sheet.addView(extraContent);}
-        gap(sheet,18);LinearLayout actions=row();
-        TextView cancel=button("Отмена",false);cancel.setMinHeight(dp(50));
-        TextView confirm=button(confirmLabel,!destructive);confirm.setMinHeight(dp(50));
-        if(destructive){confirm.setBackground(ripple(Color.rgb(91,39,48),16));confirm.setTextColor(Color.rgb(255,210,213));}
-        actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(50),1));
-        View space=new View(this);actions.addView(space,lp(10,1));
-        actions.addView(confirm,new LinearLayout.LayoutParams(0,dp(50),1));sheet.addView(actions);
-        shell.addView(sheet,new LinearLayout.LayoutParams(-1,-2));dialog.setContentView(shell);
+        TextView icon=text(glyph,21,destructive?Color.rgb(255,145,153):GREEN,true);
+        icon.setGravity(Gravity.CENTER);
+        icon.setBackground(shape(destructive?Color.rgb(48,29,36):Color.rgb(27,34,39),15,
+                destructive?Color.rgb(104,55,65):BORDER,1));
+        header.addView(icon,lp(48,48));
+
+        LinearLayout copy=column();
+        copy.setGravity(Gravity.CENTER_VERTICAL);
+        copy.setPadding(dp(13),0,0,0);
+        TextView heading=text(title,19,TEXT,true);
+        heading.setMaxLines(2);
+        heading.setLineSpacing(dp(2),1f);
+        copy.addView(heading);
+        gap(copy,5);
+        TextView note=text(subtitle,13,MUTED,false);
+        note.setLineSpacing(dp(4),1.08f);
+        note.setMaxWidth((int)(getResources().getDisplayMetrics().widthPixels*.62f));
+        copy.addView(note);
+        header.addView(copy,new LinearLayout.LayoutParams(0,-2,1));
+        sheet.addView(header);
+
+        if(extraContent!=null){
+            gap(sheet,17);
+            View separator=new View(this);
+            separator.setBackgroundColor(BORDER);
+            sheet.addView(separator,lp(-1,1));
+            gap(sheet,14);
+            TextView fieldLabel=text("ОТОБРАЖАЕМОЕ ИМЯ",9,MUTED,true);
+            fieldLabel.setLetterSpacing(.1f);
+            sheet.addView(fieldLabel);
+            gap(sheet,7);
+            sheet.addView(extraContent,new LinearLayout.LayoutParams(-1,dp(52)));
+        }
+
+        gap(sheet,19);
+        View divider=new View(this);
+        divider.setBackgroundColor(BORDER);
+        sheet.addView(divider,lp(-1,1));
+        gap(sheet,14);
+
+        LinearLayout actions=row();
+        TextView cancel=button("Отмена",false);
+        cancel.setMinHeight(dp(48));
+        cancel.setBackground(ripple(PANEL2,14));
+        cancel.setTextColor(MUTED);
+        TextView confirm=button(confirmLabel,!destructive);
+        confirm.setMinHeight(dp(48));
+        confirm.setBackground(ripple(destructive?Color.rgb(83,39,48):Color.rgb(42,61,35),14));
+        confirm.setTextColor(destructive?Color.rgb(255,205,210):GREEN);
+        actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(48),1));
+        View spacer=new View(this);
+        actions.addView(spacer,lp(10,1));
+        actions.addView(confirm,new LinearLayout.LayoutParams(0,dp(48),1));
+        sheet.addView(actions);
+
+        shell.addView(sheet,new LinearLayout.LayoutParams(-1,-2));
+        dialog.setContentView(shell);
+        dialog.setCancelable(true);
+        dialog.setCanceledOnTouchOutside(true);
+        dialog.show();
+
         Window window=dialog.getWindow();
-        if(window!=null){window.setBackgroundDrawableResource(android.R.color.transparent);window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
-            WindowManager.LayoutParams attributes=window.getAttributes();attributes.dimAmount=.72f;attributes.gravity=Gravity.BOTTOM;window.setAttributes(attributes);
-            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.WRAP_CONTENT);window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);}
-        cancel.setOnClickListener(v->dialog.dismiss());confirm.setOnClickListener(v->{dialog.dismiss();if(onConfirm!=null)onConfirm.run();});
-        dialog.setCanceledOnTouchOutside(true);dialog.show();
-        if(window!=null)window.setLayout(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.WRAP_CONTENT);
+        if(window!=null){
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams attributes=window.getAttributes();
+            attributes.dimAmount=.78f;
+            attributes.gravity=Gravity.CENTER;
+            window.setAttributes(attributes);
+            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.WRAP_CONTENT);
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+            window.getDecorView().setPadding(0,0,0,0);
+        }
+
+        Runnable closeAnimated=()->sheet.animate().alpha(0f).scaleX(.97f).scaleY(.97f)
+                .translationY(dp(8)).setDuration(120).withEndAction(dialog::dismiss).start();
+        cancel.setOnClickListener(v->closeAnimated.run());
+        confirm.setOnClickListener(v->{
+            closeAnimated.run();
+            if(onConfirm!=null)sheet.postDelayed(onConfirm,135);
+        });
+
+        sheet.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0f)
+                .setDuration(210).setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
     }
 
     private void showEditNameSheet(String currentName){
