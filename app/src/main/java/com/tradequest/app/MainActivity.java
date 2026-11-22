@@ -14,6 +14,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.MotionEvent;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
@@ -84,6 +85,8 @@ public class MainActivity extends Activity {
     private Spinner leverageSpinner;
     private TextView riskPreview;
     private CandlestickChartView setupChart;
+    private CandlestickChartView feedChart;
+    private TextView feedMeta;
     private final List<JSONObject> tradeHistory=new ArrayList<>();
     private int calendarMonthOffset=0;
     private static final String[] PAIRS={"BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","DOGEUSDT","ADAUSDT","LINKUSDT","AVAXUSDT","LTCUSDT","BCHUSDT","SUIUSDT","TONUSDT","1000PEPEUSDT","XAUTUSDT"};
@@ -433,14 +436,18 @@ public class MainActivity extends Activity {
         classic.setOnClickListener(v->{if(binaryMode){binaryMode=false;invalidateScenario();showPractice();}});binary.setOnClickListener(v->{if(!binaryMode){binaryMode=true;invalidateScenario();showPractice();}});c.addView(modeCard);gap(c,16);
         LinearLayout chartCard = card();
         LinearLayout chartTop = row(); chartTop.addView(text("График", 10, MUTED, true),new LinearLayout.LayoutParams(0,-2,1));
-        chartTop.addView(text(binaryMode?"Bybit · 1m execution":"Bybit · Linear",10,MUTED,false));chartCard.addView(chartTop);gap(chartCard,8);chartCard.addView(text("Свечи · EMA 20/50 · RSI 14 · объём · уровни",10,MUTED,false));gap(chartCard,8);
-        practiceChart = new CandlestickChartView(this); practiceChart.setEmptyLabel("Загружаем историю рынка"); chartCard.addView(practiceChart,lp(-1,230)); gap(chartCard, 8);
+        chartTop.addView(text(binaryMode?"Bybit · 1m execution":"Bybit · Linear",10,MUTED,false));chartCard.addView(chartTop);gap(chartCard,8);
+        addChartTimeframes(chartCard);
+        chartCard.addView(text("Свечи · EMA 20/50 · RSI 14 · объём · уровни",10,MUTED,false));gap(chartCard,8);
+        practiceChart = new CandlestickChartView(this); practiceChart.setEmptyLabel("Загружаем историю рынка"); chartCard.addView(practiceChart,lp(-1,250));
+        addChartZoomControls(chartCard,practiceChart);gap(chartCard, 8);
         chartCard.addView(text("Будущие свечи скрыты. Решение принимается только по данным, доступным на тот момент.",11,MUTED,false));gap(chartCard,10);practiceReadout=text(buildMarketReadout(candles,pivot),11,TEXT,false);chartCard.addView(practiceReadout);
         c.addView(chartCard); gap(c, 16);
         LinearLayout info = card(); info.addView(text("КАК ЭТО РАБОТАЕТ", 10, GREEN, true)); gap(info, 8);
         info.addView(text("Выбранная свеча уже закрыта. Вход в симуляции будет по открытию следующей свечи — так приложение не использует будущее для расчёта цены входа.", 12, MUTED, false)); c.addView(info);
         gap(c, 16);
         addButton(c, binaryMode?"Выбрать направление и экспирацию":"Настроить сделку", true, v -> { if (pivot < 0 || candles.isEmpty()) toast("Сначала загрузи исторический момент"); else if(binaryMode)showBinarySetup();else showSetup(); });
+        addPracticeFeed(c);
         addBottomNav(1);
         if (candles.isEmpty() && !loading) loadScenario();
         else if (pivot >= 0) updatePracticeChart();
@@ -504,7 +511,7 @@ public class MainActivity extends Activity {
                     loading=false;
                     if(!requestedSymbol.equals(symbol)||!requestedInterval.equals(interval)||requestedBinary!=binaryMode){if(page==1)loadScenario();return;}
                     JSONArray history=new JSONArray();for(Long t:recentTimes)if(t!=selectedTime)history.put(t);history.put(selectedTime);
-                    while(history.length()>30){JSONArray trimmed=new JSONArray();for(int k=history.length()-30;k<history.length();k++)trimmed.put(history.optLong(k));history=trimmed;}
+                    while(history.length()>100){JSONArray trimmed=new JSONArray();for(int k=history.length()-100;k<history.length();k++)trimmed.put(history.optLong(k));history=trimmed;}
                     prefs.edit().putString(historyKey,history.toString()).apply();
                     candles=loaded;pivot=selected;loadedBinaryHistory=requestedBinary;
                     if(practiceStatus!=null)practiceStatus.setText("Загружено "+loaded.size()+" "+(requestedBinary?"минутных":"исторических")+" свечей · "+formatDate(loaded.get(pivot).time)+" · Bybit API");
@@ -546,8 +553,46 @@ public class MainActivity extends Activity {
         practiceChart.setEmptyLabel("");
         practiceChart.invalidate();
         if(practiceReadout!=null)practiceReadout.setText(buildMarketReadout(candles,pivot));
+        if(feedChart!=null){feedChart.setCandles(candles.subList(start,pivot+1));feedChart.setMarkers(Double.NaN,Double.NaN,Double.NaN);}
+        if(feedMeta!=null)feedMeta.setText(symbol+" · "+(binaryMode?"1m":intervalLabel(interval))+" · "+formatDate(candles.get(pivot).time)+" · ситуация до входа");
     }
 
+    private void addChartTimeframes(LinearLayout parent){
+        String[] ids={"1","5","15","60","240","D"};String[] labels={"1m","5m","15m","1h","4h","1D"};
+        LinearLayout line=row();line.setGravity(Gravity.CENTER);int count=binaryMode?1:ids.length;
+        for(int i=0;i<count;i++){final String next=ids[i];TextView chip=text(labels[i],10,interval.equals(next)?BG:MUTED,true);chip.setGravity(Gravity.CENTER);chip.setBackground(shape(interval.equals(next)?GREEN:PANEL2,9,interval.equals(next)?GREEN:BORDER,1));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(34),1);if(i>0)p.leftMargin=dp(4);line.addView(chip,p);chip.setOnClickListener(v->{if(!next.equals(interval)){interval=next;invalidateScenario();showPractice();}});}
+        parent.addView(line);gap(parent,8);
+    }
+
+    private void addChartZoomControls(LinearLayout parent,CandlestickChartView chart){
+        LinearLayout controls=row();controls.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);
+        TextView out=button("−",false),reset=button("Сбросить",false),in=button("+",false);
+        out.setTextSize(18);in.setTextSize(18);out.setMinHeight(dp(34));reset.setMinHeight(dp(34));in.setMinHeight(dp(34));
+        controls.addView(out,lp(42,34));LinearLayout.LayoutParams rp=lp(92,34);rp.leftMargin=dp(6);controls.addView(reset,rp);LinearLayout.LayoutParams ip=lp(42,34);ip.leftMargin=dp(6);controls.addView(in,ip);
+        out.setOnClickListener(v->chart.zoomBy(.8f));in.setOnClickListener(v->chart.zoomBy(1.25f));reset.setOnClickListener(v->chart.resetView());parent.addView(controls);gap(parent,6);
+        TextView hint=text("Масштаб: кнопки или два пальца · Перемещение: проведи по графику",10,MUTED,false);parent.addView(hint);
+    }
+
+    private void addPracticeFeed(LinearLayout parent){
+        gap(parent,12);LinearLayout feed=card();
+        LinearLayout title=row();title.addView(text("Лента сделок",17,TEXT,true),new LinearLayout.LayoutParams(0,-2,1));
+        int skipped=prefs.getInt("feed_skipped",0),opened=prefs.getInt("feed_opened",0);
+        title.addView(text("Пропущено "+skipped+" · Открыто "+opened,10,MUTED,false));feed.addView(title);gap(feed,5);
+        TextView intro=text("Разбирай ситуации по одной. Сначала оцени график, затем решай: пропустить или открыть виртуальную сделку.",11,MUTED,false);intro.setLineSpacing(dp(3),1f);feed.addView(intro);gap(feed,10);
+        feedMeta=text("Загружаем историческую ситуацию…",10,MUTED,false);feed.addView(feedMeta);gap(feed,8);
+        feedChart=new CandlestickChartView(this);feedChart.setEmptyLabel("Исторический график появится после загрузки");feed.addView(feedChart,lp(-1,220));
+        addChartZoomControls(feed,feedChart);gap(feed,8);
+        LinearLayout swipeZone=row();swipeZone.setGravity(Gravity.CENTER);swipeZone.setBackground(shape(PANEL2,12,BORDER,1));pad(swipeZone,10,10,10,10);
+        TextView left=text("←  Пропустить",12,MUTED,true);left.setGravity(Gravity.CENTER);TextView right=text("Открыть сделку  →",12,GREEN,true);right.setGravity(Gravity.CENTER);
+        swipeZone.addView(left,new LinearLayout.LayoutParams(0,dp(38),1));View sep=new View(this);sep.setBackgroundColor(BORDER);swipeZone.addView(sep,lp(1,26));swipeZone.addView(right,new LinearLayout.LayoutParams(0,dp(38),1));feed.addView(swipeZone);gap(feed,8);
+        TextView gestureHint=text("Свайпни влево, чтобы пропустить, или вправо, чтобы открыть",10,MUTED,false);gestureHint.setGravity(Gravity.CENTER);feed.addView(gestureHint);
+        final float[] downX={0};swipeZone.setOnTouchListener((v,event)->{if(event.getAction()==MotionEvent.ACTION_DOWN){downX[0]=event.getX();return true;}if(event.getAction()==MotionEvent.ACTION_UP){float dx=event.getX()-downX[0];if(Math.abs(dx)>dp(36)){if(dx<0)skipFeedScenario();else openFeedScenario();}return true;}return true;});
+        LinearLayout actions=row();TextView skip=button("Пропустить",false),open=button("Открыть сделку",true);actions.addView(skip,new LinearLayout.LayoutParams(0,dp(46),1));View gap=new View(this);actions.addView(gap,lp(8,1));actions.addView(open,new LinearLayout.LayoutParams(0,dp(46),1));feed.addView(actions);skip.setOnClickListener(v->skipFeedScenario());open.setOnClickListener(v->openFeedScenario());
+        parent.addView(feed);
+    }
+
+    private void skipFeedScenario(){if(loading)return;if(pivot<0||candles.isEmpty()){loadScenario();return;}prefs.edit().putInt("feed_skipped",prefs.getInt("feed_skipped",0)+1).apply();showPractice();loadScenario();}
+    private void openFeedScenario(){if(loading)return;if(pivot<0||candles.isEmpty()){toast("Сначала дождись загрузки графика");return;}prefs.edit().putInt("feed_opened",prefs.getInt("feed_opened",0)+1).apply();if(binaryMode)showBinarySetup();else showSetup();}
 
     private void showBinarySetup(){
         page=2;beginPage("Бинарная сделка",true);ScrollView sv=scroll(root);LinearLayout c=content(sv);
@@ -936,54 +981,71 @@ public class MainActivity extends Activity {
         private double entry=Double.NaN,tp=Double.NaN,sl=Double.NaN;
         private String tpTag="TP",slTag="SL";
         private String emptyLabel="";
-        CandlestickChartView(Context context){super(context);setLayerType(View.LAYER_TYPE_SOFTWARE,null);}
-        void setCandles(List<MarketData.Candle> data){values=new ArrayList<>(data);setAlpha(.35f);animate().alpha(1f).setDuration(180).start();invalidate();}
+        private float zoom=1f,panBars=0f,lastX=0f,lastSpan=0f;
+        CandlestickChartView(Context context){super(context);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setClickable(true);}
+        void setCandles(List<MarketData.Candle> data){values=new ArrayList<>(data);zoom=1f;panBars=0f;setAlpha(.35f);animate().alpha(1f).setDuration(180).start();invalidate();}
         void setMarkers(double e,double t,double s){entry=e;tp=t;sl=s;tpTag="TP";slTag="SL";invalidate();}
         void setBinaryMarkers(double e,double expiry){entry=e;tp=expiry;sl=Double.NaN;tpTag="EXP";invalidate();}
         void setEmptyLabel(String s){emptyLabel=s;invalidate();}
+        void zoomBy(float factor){zoom=Math.max(1f,Math.min(8f,zoom*factor));clampPan();invalidate();}
+        void resetView(){zoom=1f;panBars=0f;invalidate();}
+        private int visibleCount(){return Math.max(18,Math.min(values.size(),(int)(values.size()/zoom)));}
+        private int visibleEnd(){return Math.max(0,Math.min(values.size()-1,values.size()-1-Math.round(panBars)));}
+        private void clampPan(){panBars=Math.max(0,Math.min(Math.max(0,values.size()-visibleCount()),panBars));}
+        @Override public boolean onTouchEvent(MotionEvent event){
+            if(values.size()<2)return true;
+            int action=event.getActionMasked();
+            if(action==MotionEvent.ACTION_DOWN){lastX=event.getX();lastSpan=event.getPointerCount()>1?span(event):0;getParent().requestDisallowInterceptTouchEvent(true);return true;}
+            if(action==MotionEvent.ACTION_POINTER_DOWN){lastSpan=span(event);return true;}
+            if(action==MotionEvent.ACTION_MOVE){
+                if(event.getPointerCount()>=2){float now=span(event);if(lastSpan>0&&now>0){zoom=Math.max(1f,Math.min(8f,zoom*now/lastSpan));clampPan();invalidate();}lastSpan=now;}
+                else{float x=event.getX(),dx=x-lastX;float plotWidth=Math.max(1,getWidth()-dp(92));panBars+=(-dx/plotWidth)*visibleCount();clampPan();lastX=x;invalidate();}
+                return true;
+            }
+            if(action==MotionEvent.ACTION_POINTER_UP){lastSpan=0;lastX=event.getX();return true;}
+            if(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_CANCEL){getParent().requestDisallowInterceptTouchEvent(false);performClick();return true;}
+            return true;
+        }
+        private float span(MotionEvent e){if(e.getPointerCount()<2)return 0;float dx=e.getX(0)-e.getX(1),dy=e.getY(0)-e.getY(1);return (float)Math.sqrt(dx*dx+dy*dy);}
+        @Override public boolean performClick(){super.performClick();return true;}
         private void line(Canvas c,float x1,float y1,float x2,float y2,int color,float width){p.setColor(color);p.setStrokeWidth(width);p.setStyle(Paint.Style.STROKE);p.setPathEffect(null);c.drawLine(x1,y1,x2,y2,p);p.setStyle(Paint.Style.FILL);}
         private void label(Canvas c,String s,float x,float y,int color,float size){p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));p.setStyle(Paint.Style.FILL);c.drawText(s,x,y,p);}
         private double ema(int index,int period){double alpha=2.0/(period+1.0),v=values.get(0).close;for(int i=1;i<=index;i++)v=values.get(i).close*alpha+v*(1-alpha);return v;}
-        private double rsi(int period){if(values.size()<period+1)return Double.NaN;double gain=0,loss=0;for(int i=1;i<=period;i++){double d=values.get(i).close-values.get(i-1).close;if(d>0)gain+=d;else loss-=d;}double ag=gain/period,al=loss/period;for(int i=period+1;i<values.size();i++){double d=values.get(i).close-values.get(i-1).close;ag=(ag*(period-1)+Math.max(0,d))/period;al=(al*(period-1)+Math.max(0,-d))/period;}if(al==0)return 100;double rs=ag/al;return 100-(100/(1+rs));}
+        private double rsi(int end,int period){if(end<period)return Double.NaN;double gain=0,loss=0;for(int i=end-period+1;i<=end;i++){double d=values.get(i).close-values.get(i-1).close;if(d>0)gain+=d;else loss-=d;}if(loss==0)return 100;double rs=(gain/period)/(loss/period);return 100-(100/(1+rs));}
         @Override protected void onDraw(Canvas canvas){
             super.onDraw(canvas);float w=getWidth(),h=getHeight();canvas.drawColor(PANEL);
             if(values.isEmpty()){label(canvas,emptyLabel.length()==0?"Нет исторических данных":emptyLabel,dp(12),h/2,TEXT,dp(12));return;}
-            int n=values.size();float left=dp(10),axisLeft=w-dp(76),right=axisLeft-dp(8),top=dp(43),priceBottom=h-dp(35),volumeTop=h-dp(29),bottom=h-dp(5);
-            if(right<=left||priceBottom<=top)return;
+            int end=visibleEnd(),count=visibleCount(),start=Math.max(0,end-count+1),n=end-start+1;
+            float left=dp(10),axisLeft=w-dp(82),right=axisLeft-dp(8),top=dp(43),priceBottom=h-dp(35),bottom=h-dp(5);
+            if(right<=left||priceBottom<=top||n<=0)return;
             double min=Double.MAX_VALUE,max=-Double.MAX_VALUE,maxVol=0;
-            for(MarketData.Candle c:values){min=Math.min(min,c.low);max=Math.max(max,c.high);maxVol=Math.max(maxVol,c.volume);}
-            if(Double.isFinite(entry)){min=Math.min(min,entry);max=Math.max(max,entry);}
-            if(Double.isFinite(tp)){min=Math.min(min,tp);max=Math.max(max,tp);}
-            if(Double.isFinite(sl)){min=Math.min(min,sl);max=Math.max(max,sl);}
+            for(int i=start;i<=end;i++){MarketData.Candle c=values.get(i);min=Math.min(min,c.low);max=Math.max(max,c.high);maxVol=Math.max(maxVol,c.volume);}
+            if(Double.isFinite(entry)){min=Math.min(min,entry);max=Math.max(max,entry);}if(Double.isFinite(tp)){min=Math.min(min,tp);max=Math.max(max,tp);}if(Double.isFinite(sl)){min=Math.min(min,sl);max=Math.max(max,sl);}
             double range=max-min;if(range<=0)range=Math.max(max*.002,0.000001);double extra=range*.08;min-=extra;max+=extra;
             float plotH=priceBottom-top,plotW=right-left;
             p.setColor(Color.rgb(16,19,25));canvas.drawRect(axisLeft,top,w,priceBottom,p);
             for(int i=0;i<5;i++){float y=top+plotH*i/4f;line(canvas,left,y,right,y,Color.rgb(48,55,65),dp(.7f));String scale=formatChartPrice(max-(max-min)*i/4.0);p.setTextSize(dp(8));float tw=p.measureText(scale);label(canvas,scale,w-dp(6)-tw,y+dp(3),MUTED,dp(8));}
-            float step=plotW/n,bodyW=Math.max(dp(1.5f),Math.min(dp(7),step*.58f));
-            for(int i=0;i<n;i++){
-                MarketData.Candle c=values.get(i);float x=left+(i+.5f)*step;
+            float step=plotW/n,bodyW=Math.max(dp(1.5f),Math.min(dp(9),step*.62f));
+            for(int i=start;i<=end;i++){
+                MarketData.Candle c=values.get(i);float x=left+(i-start+.5f)*step;
                 float yO=map(c.open,min,max,top,priceBottom),yC=map(c.close,min,max,top,priceBottom),yH=map(c.high,min,max,top,priceBottom),yL=map(c.low,min,max,top,priceBottom);
                 int color=c.close>=c.open?Color.rgb(78,174,119):Color.rgb(207,86,91);
                 p.setColor(color);p.setStrokeWidth(Math.max(dp(1),bodyW*.22f));p.setStyle(Paint.Style.STROKE);canvas.drawLine(x,yH,x,yL,p);p.setStyle(Paint.Style.FILL);
-                float y=Math.min(yO,yC),bh=Math.max(dp(2.4f),Math.abs(yC-yO));RectF body=new RectF(x-bodyW/2,y,x+bodyW/2,y+bh);
-                p.setColor(color);canvas.drawRoundRect(body,dp(1.2f),dp(1.2f),p);
-                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dp(.55f));p.setColor(Color.argb(210,245,250,250));canvas.drawRoundRect(body,dp(1.2f),dp(1.2f),p);p.setStyle(Paint.Style.FILL);
-                if(body.height()>dp(4)){p.setColor(Color.argb(55,255,255,255));canvas.drawLine(body.left+dp(1),body.top+dp(1),body.right-dp(1),body.top+dp(1),p);}
-                if(maxVol>0){float vh=(float)(c.volume/maxVol)*dp(20);p.setColor(Color.argb(100,color==Color.rgb(78,174,119)?78:207, color==Color.rgb(78,174,119)?174:86, color==Color.rgb(78,174,119)?119:91));canvas.drawRect(x-bodyW/2, bottom-vh,x+bodyW/2,bottom,p);}
+                float y=Math.min(yO,yC),bh=Math.max(dp(2.4f),Math.abs(yC-yO));RectF body=new RectF(x-bodyW/2,y,x+bodyW/2,y+bh);p.setColor(color);canvas.drawRoundRect(body,dp(1.5f),dp(1.5f),p);
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dp(.55f));p.setColor(Color.argb(180,245,250,250));canvas.drawRoundRect(body,dp(1.5f),dp(1.5f),p);p.setStyle(Paint.Style.FILL);
+                if(maxVol>0){float vh=(float)(c.volume/maxVol)*dp(20);p.setColor(Color.argb(100,color==Color.rgb(78,174,119)?78:207,color==Color.rgb(78,174,119)?174:86,color==Color.rgb(78,174,119)?119:91));canvas.drawRect(x-bodyW/2,bottom-vh,x+bodyW/2,bottom,p);}
             }
-            drawAverage(canvas,20,Color.rgb(115,181,139),left,step,min,max,top,priceBottom);
-            drawAverage(canvas,50,Color.rgb(139,147,158),left,step,min,max,top,priceBottom);
+            drawAverage(canvas,20,Color.rgb(115,181,139),left,step,min,max,top,priceBottom,start,end);
+            drawAverage(canvas,50,Color.rgb(139,147,158),left,step,min,max,top,priceBottom,start,end);
             drawLevel(canvas,left,right,min,max,top,priceBottom,entry,Color.rgb(220,224,230),"IN");
-            double support=Double.MAX_VALUE,resistance=-Double.MAX_VALUE;
-            for(int i=Math.max(0,n-50);i<n;i++){support=Math.min(support,values.get(i).low);resistance=Math.max(resistance,values.get(i).high);}
+            double support=Double.MAX_VALUE,resistance=-Double.MAX_VALUE;for(int i=start;i<=end;i++){support=Math.min(support,values.get(i).low);resistance=Math.max(resistance,values.get(i).high);}
             drawLevel(canvas,left,right,min,max,top,priceBottom,support,Color.rgb(110,145,124),"S");
             drawLevel(canvas,left,right,min,max,top,priceBottom,resistance,Color.rgb(151,135,112),"R");
-            drawLevel(canvas,left,right,min,max,top,priceBottom,tp,GREEN,tpTag);
-            drawLevel(canvas,left,right,min,max,top,priceBottom,sl,RED,slTag);
-            MarketData.Candle last=values.get(n-1);double rv=rsi(14);
+            drawLevel(canvas,left,right,min,max,top,priceBottom,tp,GREEN,tpTag);drawLevel(canvas,left,right,min,max,top,priceBottom,sl,RED,slTag);
+            MarketData.Candle last=values.get(end);double rv=rsi(end,14);
             String head="O "+priceFmt.format(last.open)+"   H "+priceFmt.format(last.high)+"   L "+priceFmt.format(last.low)+"   C "+priceFmt.format(last.close);
             label(canvas,head,left,dp(12),TEXT,dp(8));
-            String stats="EMA20 "+priceFmt.format(ema(n-1,20))+"   EMA50 "+priceFmt.format(ema(n-1,50))+"   RSI14 "+(Double.isNaN(rv)?"—":priceFmt.format(rv));
+            String stats="EMA20 "+priceFmt.format(ema(end,20))+"   EMA50 "+priceFmt.format(ema(end,50))+"   RSI14 "+(Double.isNaN(rv)?"—":priceFmt.format(rv));
             label(canvas,stats,left,dp(25),MUTED,dp(8));
             float closeY=map(last.close,min,max,top,priceBottom);int closeColor=last.close>=last.open?Color.rgb(91,211,151):Color.rgb(239,105,115);
             p.setColor(Color.argb(175,Color.red(closeColor),Color.green(closeColor),Color.blue(closeColor)));p.setStrokeWidth(dp(1));p.setPathEffect(new android.graphics.DashPathEffect(new float[]{dp(3),dp(3)},0));canvas.drawLine(left,closeY,right,closeY,p);p.setPathEffect(null);
@@ -991,8 +1053,8 @@ public class MainActivity extends Activity {
             String closeText=formatChartPrice(last.close);p.setTextSize(dp(8));p.setTypeface(Typeface.DEFAULT_BOLD);float textWidth=p.measureText(closeText);label(canvas,closeText,closeTag.centerX()-textWidth/2,closeY+dp(3),BG,dp(8));
             label(canvas,"VOL",right-dp(25),bottom-dp(1),MUTED,dp(7));
         }
-        private void drawAverage(Canvas canvas,int period,int color,float left,float step,double min,double max,float top,float bottom){
-            if(values.size()<2)return;Path path=new Path();for(int i=0;i<values.size();i++){float x=left+(i+.5f)*step;float y=map(ema(i,period),min,max,top,bottom);if(i==0)path.moveTo(x,y);else path.lineTo(x,y);}
+        private void drawAverage(Canvas canvas,int period,int color,float left,float step,double min,double max,float top,float bottom,int start,int end){
+            if(values.size()<2)return;Path path=new Path();for(int i=start;i<=end;i++){float x=left+(i-start+.5f)*step;float y=map(ema(i,period),min,max,top,bottom);if(i==start)path.moveTo(x,y);else path.lineTo(x,y);}
             p.setColor(color);p.setStrokeWidth(dp(1.2f));p.setStyle(Paint.Style.STROKE);p.setPathEffect(null);canvas.drawPath(path,p);p.setStyle(Paint.Style.FILL);
         }
         private float map(double v,double min,double max,float top,float bottom){return bottom-(float)((v-min)/(max-min))*(bottom-top);}
@@ -1002,4 +1064,5 @@ public class MainActivity extends Activity {
             p.setStyle(Paint.Style.FILL);p.setColor(color);canvas.drawRoundRect(new RectF(right-dp(26),y-dp(8),right,y+dp(8)),dp(4),dp(4),p);
             p.setColor(BG);p.setTextSize(dp(7));p.setTypeface(Typeface.DEFAULT_BOLD);canvas.drawText(tag,right-dp(22),y+dp(2.5f),p);
         }
-    }}
+    }
+}
