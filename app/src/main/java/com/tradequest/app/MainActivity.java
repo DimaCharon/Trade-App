@@ -435,14 +435,22 @@ public class MainActivity extends Activity {
         gap(modeCard,12);modeCard.addView(text(binaryMode?"Выбери направление и срок экспирации. Итог зависит от цены закрытия исторической свечи.":"LONG/SHORT с виртуальной маржой, плечом, TP и SL.",11,MUTED,false));
         classic.setOnClickListener(v->{if(binaryMode){binaryMode=false;invalidateScenario();showPractice();}});binary.setOnClickListener(v->{if(!binaryMode){binaryMode=true;invalidateScenario();showPractice();}});c.addView(modeCard);gap(c,16);
         LinearLayout chartCard = card();
-        LinearLayout chartTop = row(); chartTop.addView(text("График", 10, MUTED, true),new LinearLayout.LayoutParams(0,-2,1));
-        chartTop.addView(text(binaryMode?"Bybit · 1m execution":"Bybit · Linear",10,MUTED,false));chartCard.addView(chartTop);gap(chartCard,8);
+        LinearLayout chartTop = row();
+        chartTop.addView(text(symbol+" · "+(binaryMode?"1m":"Bybit Linear"),13,TEXT,true),new LinearLayout.LayoutParams(0,-2,1));
+        chartTop.addView(text("HISTORICAL · BYBIT",9,MUTED,true));chartCard.addView(chartTop);gap(chartCard,6);
+        TextView chartPrice=text("Ожидаем исторические данные",17,GREEN,true);chartPrice.setTag("practice_chart_price");chartCard.addView(chartPrice);gap(chartCard,8);
+        chartCard.addView(text("OHLC  ·  EMA 20 / 50  ·  RSI 14  ·  ATR 14  ·  VOL",9,MUTED,true));gap(chartCard,6);
+        practiceChart = new CandlestickChartView(this); practiceChart.setEmptyLabel("Загружаем историю рынка"); chartCard.addView(practiceChart,lp(-1,300));
+        gap(chartCard,8);
         addChartTimeframes(chartCard);
-        chartCard.addView(text("Свечи · EMA 20/50 · RSI 14 · объём · уровни",10,MUTED,false));gap(chartCard,8);
-        practiceChart = new CandlestickChartView(this); practiceChart.setEmptyLabel("Загружаем историю рынка"); chartCard.addView(practiceChart,lp(-1,250));
         addChartZoomControls(chartCard,practiceChart);gap(chartCard, 8);
-        chartCard.addView(text("Будущие свечи скрыты. Решение принимается только по данным, доступным на тот момент.",11,MUTED,false));gap(chartCard,10);practiceReadout=text(buildMarketReadout(candles,pivot),11,TEXT,false);chartCard.addView(practiceReadout);
-        c.addView(chartCard); gap(c, 16);
+        chartCard.addView(text("График показывает только свечи, уже закрытые к выбранному моменту. Цена справа — закрытие последней видимой свечи.",10,MUTED,false));gap(chartCard,10);
+        practiceReadout=text(buildMarketReadout(candles,pivot),11,TEXT,false);practiceReadout.setLineSpacing(dp(4),1f);chartCard.addView(practiceReadout);
+        c.addView(chartCard); gap(c, 12);
+        LinearLayout marketDetails=card();
+        marketDetails.addView(text("РЫНОЧНЫЙ СРЕЗ",10,GREEN,true));gap(marketDetails,8);
+        TextView marketStats=text(buildMarketDetails(candles,pivot,interval),12,TEXT,false);marketStats.setLineSpacing(dp(5),1f);marketStats.setTag("practice_market_stats");marketDetails.addView(marketStats);
+        c.addView(marketDetails);gap(c,16);
         LinearLayout info = card(); info.addView(text("КАК ЭТО РАБОТАЕТ", 10, GREEN, true)); gap(info, 8);
         info.addView(text("Выбранная свеча уже закрыта. Вход в симуляции будет по открытию следующей свечи — так приложение не использует будущее для расчёта цены входа.", 12, MUTED, false)); c.addView(info);
         gap(c, 16);
@@ -528,6 +536,32 @@ public class MainActivity extends Activity {
         });
     }
 
+    private String buildMarketDetails(List<MarketData.Candle> data,int end,String tf){
+        if(data==null||end<30||end>=data.size())return "Данные появятся после загрузки истории.";
+        MarketData.Candle last=data.get(end);
+        long intervalMs="D".equals(tf)?86400000L:("W".equals(tf)?604800000L:("M".equals(tf)?2592000000L:Long.parseLong(tf)*60000L));
+        long window=86400000L;
+        int from=end;while(from>0&&last.time-data.get(from-1).time<window)from--;
+        double high=-Double.MAX_VALUE,low=Double.MAX_VALUE,volume=0;
+        for(int i=from;i<=end;i++){MarketData.Candle q=data.get(i);high=Math.max(high,q.high);low=Math.min(low,q.low);volume+=q.volume;}
+        double change=(last.close-data.get(from).open)/data.get(from).open*100.0;
+        double e20=last.close,e50=last.close;int emaFrom=Math.max(0,end-199);
+        for(int i=emaFrom+1;i<=end;i++){double close=data.get(i).close;e20=close*(2.0/21.0)+e20*(1-2.0/21.0);e50=close*(2.0/51.0)+e50*(1-2.0/51.0);}
+        double tr=0;int atrCount=Math.min(14,end);
+        for(int i=end-atrCount+1;i<=end;i++){MarketData.Candle q=data.get(i),prev=data.get(i-1);tr+=Math.max(q.high-q.low,Math.max(Math.abs(q.high-prev.close),Math.abs(q.low-prev.close)));}
+        double atr=atrCount>0?tr/atrCount:0;
+        double avgVol=0;int volFrom=Math.max(0,end-20);for(int i=volFrom;i<end;i++)avgVol+=data.get(i).volume;
+        avgVol/=Math.max(1,end-volFrom);double relVol=avgVol>0?last.volume/avgVol:0;
+        String sign=change>=0?"+":"";
+        return "Цена закрытия     "+priceFmt.format(last.close)+"\n"+
+                "Изменение окна 24ч     "+sign+priceFmt.format(change)+"%\n"+
+                "Максимум / минимум 24ч     "+priceFmt.format(high)+" / "+priceFmt.format(low)+"\n"+
+                "Сумма объёма свечей 24ч     "+priceFmt.format(volume)+"\n"+
+                "EMA 20 / EMA 50     "+priceFmt.format(e20)+" / "+priceFmt.format(e50)+"\n"+
+                "ATR 14     "+priceFmt.format(atr)+" ("+priceFmt.format(last.close>0?atr/last.close*100:0)+"%)\n"+
+                "Объём последней свечи     "+priceFmt.format(relVol)+"× от среднего за 20 свечей";
+    }
+
     private String buildMarketReadout(List<MarketData.Candle> data,int end){
         if(data==null||end<30||end>=data.size())return "Недостаточно данных.";
         int from=Math.max(0,end-59);double close=data.get(end).close;
@@ -553,6 +587,10 @@ public class MainActivity extends Activity {
         practiceChart.setEmptyLabel("");
         practiceChart.invalidate();
         if(practiceReadout!=null)practiceReadout.setText(buildMarketReadout(candles,pivot));
+        TextView priceView=(TextView)root.findViewWithTag("practice_chart_price");
+        if(priceView!=null)priceView.setText(priceFmt.format(candles.get(pivot).close)+"  "+symbol);
+        TextView statsView=(TextView)root.findViewWithTag("practice_market_stats");
+        if(statsView!=null)statsView.setText(buildMarketDetails(candles,pivot,interval));
         if(feedChart!=null){feedChart.setCandles(candles.subList(start,pivot+1));feedChart.setMarkers(Double.NaN,Double.NaN,Double.NaN);}
         if(feedMeta!=null)feedMeta.setText(symbol+" · "+(binaryMode?"1m":intervalLabel(interval))+" · "+formatDate(candles.get(pivot).time)+" · ситуация до входа");
     }
