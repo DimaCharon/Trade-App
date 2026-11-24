@@ -539,13 +539,12 @@ public class MainActivity extends Activity {
     private String buildMarketDetails(List<MarketData.Candle> data,int end,String tf){
         if(data==null||end<30||end>=data.size())return "Данные появятся после загрузки истории.";
         MarketData.Candle last=data.get(end);
-        long intervalMs="D".equals(tf)?86400000L:("W".equals(tf)?604800000L:("M".equals(tf)?2592000000L:Long.parseLong(tf)*60000L));
         long window=86400000L;
         int from=end;while(from>0&&last.time-data.get(from-1).time<window)from--;
         double high=-Double.MAX_VALUE,low=Double.MAX_VALUE,volume=0;
         for(int i=from;i<=end;i++){MarketData.Candle q=data.get(i);high=Math.max(high,q.high);low=Math.min(low,q.low);volume+=q.volume;}
         double change=(last.close-data.get(from).open)/data.get(from).open*100.0;
-        double e20=last.close,e50=last.close;int emaFrom=Math.max(0,end-199);
+        int emaFrom=Math.max(0,end-199);double e20=data.get(emaFrom).close,e50=e20;
         for(int i=emaFrom+1;i<=end;i++){double close=data.get(i).close;e20=close*(2.0/21.0)+e20*(1-2.0/21.0);e50=close*(2.0/51.0)+e50*(1-2.0/51.0);}
         double tr=0;int atrCount=Math.min(14,end);
         for(int i=end-atrCount+1;i<=end;i++){MarketData.Candle q=data.get(i),prev=data.get(i-1);tr+=Math.max(q.high-q.low,Math.max(Math.abs(q.high-prev.close),Math.abs(q.low-prev.close)));}
